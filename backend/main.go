@@ -14,16 +14,20 @@ func main() {
 
 	serveMux := http.NewServeMux()
 
-	apiConfig := handlers.ApiConfig{}
+	api := &handlers.ApiConfig{}
 
 	// Serves static files
-	serveMux.Handle("/app/", http.StripPrefix("/app/", http.FileServer(http.Dir(ROOTDIR))))
-	// serveMux.HandleFunc("/health", apiConfig.CheckHealthHandler)
+	serveMux.Handle("/app/", http.StripPrefix("/app/", api.MiddlewareMetricInc(http.FileServer(http.Dir(ROOTDIR)))))
+
+	// Serves API endpoints
+	serveMux.HandleFunc("/health", api.MiddlewareLog(api.CheckHealthHandler))
 
 	server := http.Server{
 		Handler: serveMux,
 		Addr:    PORT,
 	}
+
+	log.Printf("Serving files from %s on port %s\n", ROOTDIR, PORT)
 	err := server.ListenAndServe()
 	if err != nil {
 		log.Fatalf("Error starting server: %s", err)
