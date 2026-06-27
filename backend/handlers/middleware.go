@@ -15,7 +15,7 @@ func (a *ApiConfig) MiddlewareMetricInc(next http.Handler) http.Handler {
 	})
 }
 
-func (a *ApiConfig) MiddlewareLog(next http.HandlerFunc) http.HandlerFunc {
+func (a *ApiConfig) MiddlewareLog(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Logs every request
 		log.Printf("%s %s", r.Method, r.URL.Path)
