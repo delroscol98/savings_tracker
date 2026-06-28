@@ -39,8 +39,9 @@ func main() {
 
 	// SERVER MULTIPLEXER
 	serveMux := http.NewServeMux()
-	serveMux.Handle("/app/", http.StripPrefix("/app/", api.MiddlewareMetricInc(http.FileServer(http.Dir(ROOTDIR)))))
-	serveMux.Handle("/health", api.MiddlewareLog(http.HandlerFunc(api.CheckHealthHandler)))
+	serveMux.Handle("GET /app", http.StripPrefix("/app", api.MiddlewareMetricInc(http.FileServer(http.Dir(ROOTDIR)))))
+	serveMux.Handle("GET /health", api.MiddlewareLog(http.HandlerFunc(api.CheckHealthHandler)))
+	serveMux.Handle("POST /api/users", api.MiddlewareLog(http.HandlerFunc(api.CreateUserHandler)))
 
 	// START THE SERVER
 	server := http.Server{
