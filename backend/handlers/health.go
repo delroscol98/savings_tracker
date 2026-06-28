@@ -1,13 +1,16 @@
 package handlers
 
 import (
-	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
 func (a *ApiConfig) CheckHealthHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"status": "ok",
-	})
+	int, err := a.DatabaseQueries.Ping(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusServiceUnavailable, fmt.Sprintf("Error pinging database: %v", err))
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, int)
 }
