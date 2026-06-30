@@ -18,5 +18,7 @@ jobs:
         with:
           go-version: "1.24.5"
 
-      - name: Log Go version
-        run: (go version)
+      - name: Run backend Go tests
+        run: |
+          cd backend
+          go test ./...
