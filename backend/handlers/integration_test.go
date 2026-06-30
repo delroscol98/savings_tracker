@@ -84,7 +84,7 @@ Expected status code: 201
 Actual status code:   %v`, resp.StatusCode)
 	}
 
-	user := database.User{}
+	user := handlers.User{}
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&user)
 	if err != nil {
@@ -99,7 +99,7 @@ Expected email: test@example.com
 Actual email:   %v`, user.Email)
 	}
 
-	if user.ID == uuid.Nil {
+	if user.Id == uuid.Nil {
 		t.Error("user ID should NOT be UUID zero-value")
 	}
 

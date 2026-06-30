@@ -32,16 +32,14 @@ Actual status code:   %v
 `, w.Code)
 	}
 
-	user := database.User{}
+	user := handlers.User{}
 	decoder := json.NewDecoder(w.Body)
 	err := decoder.Decode(&user)
 	if err != nil {
 		t.Errorf(`
 Expected error: nil
-Actual error:   %v
-`, err)
+Actual error:   %v`, err)
 	}
-
 	if user.Email != "test@example.com" {
 		t.Errorf(`
 Expected email: test@example.com
@@ -49,7 +47,7 @@ Actual email:   %v
 `, user.Email)
 	}
 
-	if user.ID == uuid.Nil {
+	if user.Id == uuid.Nil {
 		t.Error("user ID should NOT be UUID zero-value")
 	}
 

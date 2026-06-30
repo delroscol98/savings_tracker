@@ -5,9 +5,19 @@ import (
 	"errors"
 	"net/http"
 	"net/mail"
+	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/lib/pq"
 )
+
+type User struct {
+	Id        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Email     string    `json:"email"`
+}
 
 func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	type CreateUserRequestParams struct {
@@ -45,5 +55,12 @@ func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, user)
+	respondWithJSON(
+		w, http.StatusCreated, User{
+			Id:        user.ID,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+			Email:     user.Email,
+		},
+	)
 }
