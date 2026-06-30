@@ -8,10 +8,25 @@ jobs:
   tests:
     name: Tests
     runs-on: ubuntu-latest
-
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: collindelrosario
+          POSTGRES_DB: savings_tracker_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     steps:
       - name: Check out code
         uses: actions/checkout@v6
+
+      - name: Setup environment variables
+        run: echo "DB_URL_TEST=postgres://collindelrosario:@localhost:5432/savings_tracker_test?sslmode=disable" >> $GITHUB_ENV
 
       - name: Set up Go
         uses: actions/setup-go@v6

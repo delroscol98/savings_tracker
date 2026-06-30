@@ -24,12 +24,15 @@ var testServer *httptest.Server
 
 func TestMain(m *testing.M) {
 	// DATABASE SETUP
-	err := godotenv.Load("../.env")
-	if err != nil {
-		log.Fatalf("Error connecting to env file: %s", err)
-	}
+	_ = godotenv.Load("../.env")
+
 	dbURL := os.Getenv("DB_URL_TEST")
-	db, err := sql.Open("postgres", dbURL)
+	if dbURL == "" {
+		log.Fatalf("DB_URL_TEST not set")
+	}
+
+	db, _ := sql.Open("postgres", dbURL)
+	err := db.Ping()
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
