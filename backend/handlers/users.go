@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/delroscol98/savings_tracker/backend/internal/auth"
+	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/google/uuid"
 
 	"github.com/lib/pq"
@@ -42,7 +44,16 @@ func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := a.DatabaseQueries.CreateUser(r.Context(), validatedParams)
+	hashedPW, err := auth.HashPassword(validatedParams.Password)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	user, err := a.DatabaseQueries.CreateUser(r.Context(), database.CreateUserParams{
+		Email:          validatedParams.Email,
+		HashedPassword: hashedPW,
+	})
 	if err != nil {
 		// PostgreSQL's unique violation code is 23505
 		var pqe *pq.Error
