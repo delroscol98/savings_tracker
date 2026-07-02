@@ -1,4 +1,4 @@
-package handlers
+package auth
 
 import (
 	_ "embed"
@@ -17,7 +17,7 @@ func init() {
 	}
 }
 
-func isCommonPassword(password string) bool {
+func IsCommonPassword(password string) bool {
 	_, isACommonPassword := commonPasswordSet[strings.ToLower(password)]
 	return isACommonPassword
 }
