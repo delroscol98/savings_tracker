@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"net/mail"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,11 +18,13 @@ type User struct {
 	Email     string    `json:"email"`
 }
 
+type CreateUserParams struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
-	type CreateUserRequestParams struct {
-		Email string `json:"email"`
-	}
-	params := CreateUserRequestParams{}
+	params := CreateUserParams{}
 
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&params)
@@ -32,18 +33,16 @@ func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if params.Email == "" {
-		respondWithError(w, http.StatusBadRequest, "Email cannot be empty")
+	validatedParams, fieldsErrors := validateCreateUserParams(params)
+	if fieldsErrors != nil {
+		respondWithValidationError(w, http.StatusBadRequest, ValidationErrorBody{
+			Error:  "Invalid parameters for creating a user",
+			Fields: fieldsErrors,
+		})
 		return
 	}
 
-	_, err = mail.ParseAddress(params.Email)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid email")
-		return
-	}
-
-	user, err := a.DatabaseQueries.CreateUser(r.Context(), params.Email)
+	user, err := a.DatabaseQueries.CreateUser(r.Context(), validatedParams)
 	if err != nil {
 		// PostgreSQL's unique violation code is 23505
 		var pqe *pq.Error
