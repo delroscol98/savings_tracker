@@ -14,10 +14,11 @@ import (
 )
 
 type User struct {
-	Id        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
+	Id             uuid.UUID `json:"id"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	Email          string    `json:"email"`
+	HashedPassword string    `json:"hashed_password"`
 }
 
 type CreateUserParams struct {
@@ -67,10 +68,11 @@ func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(
 		w, http.StatusCreated, User{
-			Id:        user.ID,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-			Email:     user.Email,
+			Id:             user.ID,
+			CreatedAt:      user.CreatedAt,
+			UpdatedAt:      user.UpdatedAt,
+			Email:          user.Email,
+			HashedPassword: user.HashedPassword,
 		},
 	)
 }
