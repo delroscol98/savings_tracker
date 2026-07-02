@@ -3,7 +3,7 @@ package auth_test
 import (
 	"testing"
 
-	"github.com/delroscol98/savings_tracker/backend/handlers"
+	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 )
 
 func TestIsCommonPassword(t *testing.T) {
@@ -41,7 +41,7 @@ func TestIsCommonPassword(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			isCommonPassword := handlers.IsCommonPassword(tt.password)
+			isCommonPassword := auth.IsCommonPassword(tt.password)
 			if isCommonPassword != tt.isCommonPassword {
 				t.Errorf(`
 Expected password commonality: %v

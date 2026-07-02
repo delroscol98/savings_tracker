@@ -13,11 +13,11 @@ func init() {
 	commonPasswordSet = make(map[string]struct{})
 	passwords := strings.SplitSeq(mostCommonPasswords, "\n")
 	for password := range passwords {
-		commonPasswordSet[strings.ToLower(password)] = struct{}{}
+		commonPasswordSet[strings.TrimSpace(strings.ToLower(password))] = struct{}{}
 	}
 }
 
 func IsCommonPassword(password string) bool {
-	_, isACommonPassword := commonPasswordSet[strings.ToLower(password)]
+	_, isACommonPassword := commonPasswordSet[strings.TrimSpace(strings.ToLower(password))]
 	return isACommonPassword
 }
