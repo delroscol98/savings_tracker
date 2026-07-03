@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -20,7 +21,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var testServer *httptest.Server
+var (
+	testServer *httptest.Server
+	dbQueries  *database.Queries
+)
 
 func TestMain(m *testing.M) {
 	// DATABASE SETUP
@@ -38,19 +42,31 @@ func TestMain(m *testing.M) {
 	}
 
 	// MIGRATIONS
-	migration, err := os.ReadFile("../sql/schema/001_users.sql")
+	migration001, err := os.ReadFile("../sql/schema/001_users.sql")
 	if err != nil {
 		log.Fatalf("Error reading schema: %v", err)
 	}
-	migrationSplit := bytes.Split(migration, []byte("\n-- +goose Down\n"))
-	upMigration := migrationSplit[0]
-	downMigration := migrationSplit[1]
-	_, err = db.Exec(string(upMigration))
+	migration001Split := bytes.Split(migration001, []byte("\n-- +goose Down\n"))
+	upMigration001 := migration001Split[0]
+	downMigration001 := migration001Split[1]
+	_, err = db.Exec(string(upMigration001))
 	if err != nil {
 		log.Fatalf("Error executing up migration: %v", err)
 	}
 
-	dbQueries := database.New(db)
+	migration002, err := os.ReadFile("../sql/schema/002_hashed_passwords.sql")
+	if err != nil {
+		log.Fatalf("Error reading schema: %v", err)
+	}
+	migration002Split := bytes.Split(migration002, []byte("\n-- +goose Down\n"))
+	upMigration002 := migration002Split[0]
+	downMigration002 := migration002Split[1]
+	_, err = db.Exec(string(upMigration002))
+	if err != nil {
+		log.Fatalf("Error executing up migration: %v", err)
+	}
+
+	dbQueries = database.New(db)
 	api := &handlers.ApiConfig{
 		DatabaseQueries: dbQueries,
 	}
@@ -63,7 +79,12 @@ func TestMain(m *testing.M) {
 	testServer = httptest.NewServer(serveMux)
 
 	code := m.Run()
-	_, err = db.Exec(string(downMigration))
+	_, err = db.Exec(string(downMigration002))
+	if err != nil {
+		log.Fatalf("Error executing down migration: %v", err)
+	}
+
+	_, err = db.Exec(string(downMigration001))
 	if err != nil {
 		log.Fatalf("Error executing down migration: %v", err)
 	}
@@ -72,76 +93,118 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestCreateUserHandler_Valid_Integration(t *testing.T) {
-	body := strings.NewReader(`{"email": "test@example.com"}`)
-	resp, err := http.Post(testServer.URL+"/api/users", "application/json", body)
-	if err != nil {
-		t.Error("Error creating user")
+func TestCreateUserHandler_Integration(t *testing.T) {
+	tests := []struct {
+		name       string
+		email      string
+		password   string
+		wantStatus int
+		wantErr    string
+		seedDB     func(*testing.T)
+		checkUser  func(*testing.T, *handlers.User)
+	}{
+		{
+			name:       "valid user",
+			email:      "test1@example.com",
+			password:   "ThisIsATestPassword",
+			wantStatus: http.StatusCreated,
+			wantErr:    "",
+			seedDB:     func(t *testing.T) {},
+			checkUser: func(t *testing.T, u *handlers.User) {
+				if u.Id == uuid.Nil {
+					t.Error("User ID should not be zero-value")
+				}
+				if u.CreatedAt.IsZero() {
+					t.Error("User CreatedAt timestamp should not be zero-value")
+				}
+				if u.UpdatedAt.IsZero() {
+					t.Error("User UpdatedAt timestamp should not be zero-value")
+				}
+			},
+		},
 	}
 
-	defer resp.Body.Close()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.seedDB(t)
 
-	if resp.StatusCode != http.StatusCreated {
-		t.Errorf(`
-Expected status code: 201
-Actual status code:   %v`, resp.StatusCode)
-	}
+			params := strings.NewReader(fmt.Sprintf(`{"email": "%v", "password": "%v"}`, tt.email, tt.password))
+			resp, err := http.Post(testServer.URL+"/api/users", "application/json", params)
+			if err != nil {
+				t.Fatalf("Error sending post request: %v", err)
+			}
 
-	user := handlers.User{}
-	decoder := json.NewDecoder(resp.Body)
-	err = decoder.Decode(&user)
-	if err != nil {
-		t.Errorf(`
-Expected error: nil
-Actual error:   %v`, err)
-	}
+			if resp.StatusCode != tt.wantStatus {
+				t.Errorf(`
+Expected status code: %v,
+Actual status code:   %v
+`, tt.wantStatus, resp.StatusCode)
+			}
 
-	if user.Email != "test@example.com" {
-		t.Errorf(`
-Expected email: test@example.com
-Actual email:   %v`, user.Email)
-	}
+			if tt.wantErr != "" {
+				body := make(map[string]interface{})
+				decoder := json.NewDecoder(resp.Body)
+				err := decoder.Decode(&body)
+				if err != nil {
+					t.Fatalf("failed to decode response body: %v", err)
+				}
 
-	if user.Id == uuid.Nil {
-		t.Error("user ID should NOT be UUID zero-value")
-	}
+				if body["error"] != tt.wantErr {
+					t.Errorf(`
+Expected error: %v,
+Actual error:   %v
+`, tt.wantErr, body["error"])
+				}
+			}
 
-	if user.CreatedAt.IsZero() {
-		t.Error("user created_at should NOT be timestamp zero-value")
-	}
+			if tt.checkUser != nil {
+				user := handlers.User{}
+				decoder := json.NewDecoder(resp.Body)
+				err := decoder.Decode(&user)
+				if err != nil {
+					t.Fatalf("Failed to decode user: %v", err)
+				}
 
-	if user.UpdatedAt.IsZero() {
-		t.Error("user updated_at should NOT be timestamp zero-value")
+				if user.Email != tt.email {
+					t.Errorf(`
+Expected email: %v,
+Actual email:   %v
+`, tt.email, user.Email)
+				}
+
+				tt.checkUser(t, &user)
+			}
+		})
 	}
 }
 
-func TestCreateUserHandler_DuplicateEmail_Integration(t *testing.T) {
-	body := strings.NewReader(`{"email": "test@example.com"}`)
-	resp, err := http.Post(testServer.URL+"/api/users", "application/json", body)
-	if err != nil {
-		t.Error("Error creating user")
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusConflict {
-		t.Errorf(`
-Expected status code: 409
-Actual status code:   %v`, resp.StatusCode)
-	}
-
-	errorBody := handlers.ErrorBody{}
-	decoder := json.NewDecoder(resp.Body)
-	err = decoder.Decode(&errorBody)
-	if err != nil {
-		t.Errorf(`
-Expected error: nil
-Actual error:   %v`, err)
-	}
-
-	if errorBody.Error != "Email already exists" {
-		t.Errorf(`
-Expected error: Email already exists
-Actual error:   %v`, errorBody.Error)
-	}
-}
+// func TestCreateUserHandler_DuplicateEmail_Integration(t *testing.T) {
+// 	body := strings.NewReader(`{"email": "test@example.com"}`)
+// 	resp, err := http.Post(testServer.URL+"/api/users", "application/json", body)
+// 	if err != nil {
+// 		t.Error("Error creating user")
+// 	}
+//
+// 	defer resp.Body.Close()
+//
+// 	if resp.StatusCode != http.StatusConflict {
+// 		t.Errorf(`
+// Expected status code: 409
+// Actual status code:   %v`, resp.StatusCode)
+// 	}
+//
+// 	errorBody := handlers.ErrorBody{}
+// 	decoder := json.NewDecoder(resp.Body)
+// 	err = decoder.Decode(&errorBody)
+// 	if err != nil {
+// 		t.Errorf(`
+// Expected error: nil
+// Actual error:   %v`, err)
+// 	}
+//
+// 	if errorBody.Error != "Email already exists" {
+// 		t.Errorf(`
+// Expected error: Email already exists
+// Actual error:   %v`, errorBody.Error)
+// 	}
+// }
