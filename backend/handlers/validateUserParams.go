@@ -7,7 +7,7 @@ import (
 	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 )
 
-func ValidateCreateUserParams(params CreateUserParams) (CreateUserParams, FieldErrors) {
+func ValidateUserParams(params UserParams) (UserParams, FieldErrors) {
 	const MIN_PASSWORD_LENGTH = 8
 	const MAX_PASSWORD_LENGTH = 128
 

@@ -21,13 +21,13 @@ type User struct {
 	HashedPassword string    `json:"hashed_password"`
 }
 
-type CreateUserParams struct {
+type UserParams struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
 func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
-	params := CreateUserParams{}
+	params := UserParams{}
 
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&params)
@@ -36,7 +36,7 @@ func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	validatedParams, fieldsErrors := ValidateCreateUserParams(params)
+	validatedParams, fieldsErrors := ValidateUserParams(params)
 	if fieldsErrors != nil {
 		respondWithValidationError(w, http.StatusBadRequest, ValidationErrorBody{
 			Error:  "Invalid parameters for creating a user",
@@ -76,3 +76,5 @@ func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 }
+
+func (a *ApiConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {}

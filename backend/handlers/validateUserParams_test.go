@@ -7,15 +7,15 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestValidateCreateUserParams(t *testing.T) {
+func TestValidateUserParams(t *testing.T) {
 	tests := []struct {
 		name        string
-		params      handlers.CreateUserParams
+		params      handlers.UserParams
 		fieldErrors handlers.FieldErrors
 	}{
 		{
 			name: "valid params",
-			params: handlers.CreateUserParams{
+			params: handlers.UserParams{
 				Email:    "test@example.com",
 				Password: "ThisIsATestPassword",
 			},
@@ -23,7 +23,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "valid params with name and address",
-			params: handlers.CreateUserParams{
+			params: handlers.UserParams{
 				Email:    "Test <test@example.com>",
 				Password: "ThisIsATestPassword",
 			},
@@ -31,7 +31,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "empty email",
-			params: handlers.CreateUserParams{
+			params: handlers.UserParams{
 				Email:    "",
 				Password: "ThisIsATestPassword",
 			},
@@ -41,7 +41,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "invalid email and common password",
-			params: handlers.CreateUserParams{
+			params: handlers.UserParams{
 				Email:    "invalidemail",
 				Password: "ThisIsATestPassword",
 			},
@@ -51,7 +51,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "empty password",
-			params: handlers.CreateUserParams{
+			params: handlers.UserParams{
 				Email:    "test@example.com",
 				Password: "",
 			},
@@ -61,7 +61,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "too short password and common password",
-			params: handlers.CreateUserParams{
+			params: handlers.UserParams{
 				Email:    "test@example.com",
 				Password: "test",
 			},
@@ -71,7 +71,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "too long password",
-			params: handlers.CreateUserParams{
+			params: handlers.UserParams{
 				Email:    "test@example.com",
 				Password: "ThisPasswordIsLongerThan128CharactersSoThatWeCanTestThatOurSystemHandlesItProperlyWithoutAnyIssuesOrUnexpectedBehaviorWhenCreatingAUserWithThisVeryLongPassword1234567890",
 			},
@@ -83,7 +83,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, fieldErrors := handlers.ValidateCreateUserParams(tt.params)
+			_, fieldErrors := handlers.ValidateUserParams(tt.params)
 			if !cmp.Equal(fieldErrors, tt.fieldErrors) {
 				t.Errorf("FieldErrors structs do not match:\n%v", cmp.Diff(fieldErrors, tt.fieldErrors))
 			}
