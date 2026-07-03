@@ -7,10 +7,11 @@ import (
 	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 )
 
-func validateCreateUserParams(params CreateUserParams) (CreateUserParams, FieldErrors) {
+func ValidateCreateUserParams(params CreateUserParams) (CreateUserParams, FieldErrors) {
 	const MIN_PASSWORD_LENGTH = 8
 	const MAX_PASSWORD_LENGTH = 128
 
+	originalParams := params
 	fieldsErrors := make(FieldErrors)
 
 	// Email validation
@@ -48,6 +49,6 @@ func validateCreateUserParams(params CreateUserParams) (CreateUserParams, FieldE
 	if len(fieldsErrors["email"]) == 0 && len(fieldsErrors["password"]) == 0 {
 		return params, nil
 	} else {
-		return CreateUserParams{}, fieldsErrors
+		return originalParams, fieldsErrors
 	}
 }

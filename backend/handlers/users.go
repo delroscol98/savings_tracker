@@ -36,7 +36,7 @@ func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	validatedParams, fieldsErrors := validateCreateUserParams(params)
+	validatedParams, fieldsErrors := ValidateCreateUserParams(params)
 	if fieldsErrors != nil {
 		respondWithValidationError(w, http.StatusBadRequest, ValidationErrorBody{
 			Error:  "Invalid parameters for creating a user",
