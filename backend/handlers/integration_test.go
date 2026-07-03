@@ -2,6 +2,7 @@ package handlers_test
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/delroscol98/savings_tracker/backend/handlers"
+	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/joho/godotenv"
 
@@ -122,6 +124,73 @@ func TestCreateUserHandler_Integration(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:       "duplicate email",
+			email:      "test2@example.com",
+			password:   "ThisIsATestPassword",
+			wantStatus: http.StatusConflict,
+			wantErr:    "Email already exists",
+			seedDB: func(t *testing.T) {
+				hashedPw, err := auth.HashPassword("ThisIsATestPassword")
+				if err != nil {
+					t.Fatalf("Failed to hash password: %v", err)
+				}
+
+				_, err = dbQueries.CreateUser(context.Background(), database.CreateUserParams{
+					Email:          "test2@example.com",
+					HashedPassword: hashedPw,
+				})
+				if err != nil {
+					t.Fatalf("Failed to seed new user: %v", err)
+				}
+			},
+			checkUser: nil,
+		},
+		{
+			name:       "empty email",
+			email:      "",
+			password:   "ThisIsATestPassword",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "Invalid parameters for creating a user",
+			seedDB:     func(t *testing.T) {},
+			checkUser:  nil,
+		},
+		{
+			name:       "invalid email",
+			email:      "invalidemail",
+			password:   "ThisIsATestPassword",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "Invalid parameters for creating a user",
+			seedDB:     func(t *testing.T) {},
+			checkUser:  nil,
+		},
+		{
+			name:       "empty password",
+			email:      "test3@example.com",
+			password:   "",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "Invalid parameters for creating a user",
+			seedDB:     func(t *testing.T) {},
+			checkUser:  nil,
+		},
+		{
+			name:       "too short password",
+			email:      "test4@example.com",
+			password:   "test",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "Invalid parameters for creating a user",
+			seedDB:     func(t *testing.T) {},
+			checkUser:  nil,
+		},
+		{
+			name:       "too long password",
+			email:      "test5@example.com",
+			password:   "ThisPasswordIsLongerThan128CharactersSoThatWeCanTestThatOurSystemHandlesItProperlyWithoutAnyIssuesOrUnexpectedBehaviorWhenCreatingAUserWithThisVeryLongPassword1234567890",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "Invalid parameters for creating a user",
+			seedDB:     func(t *testing.T) {},
+			checkUser:  nil,
+		},
 	}
 
 	for _, tt := range tests {
@@ -177,34 +246,3 @@ Actual email:   %v
 		})
 	}
 }
-
-// func TestCreateUserHandler_DuplicateEmail_Integration(t *testing.T) {
-// 	body := strings.NewReader(`{"email": "test@example.com"}`)
-// 	resp, err := http.Post(testServer.URL+"/api/users", "application/json", body)
-// 	if err != nil {
-// 		t.Error("Error creating user")
-// 	}
-//
-// 	defer resp.Body.Close()
-//
-// 	if resp.StatusCode != http.StatusConflict {
-// 		t.Errorf(`
-// Expected status code: 409
-// Actual status code:   %v`, resp.StatusCode)
-// 	}
-//
-// 	errorBody := handlers.ErrorBody{}
-// 	decoder := json.NewDecoder(resp.Body)
-// 	err = decoder.Decode(&errorBody)
-// 	if err != nil {
-// 		t.Errorf(`
-// Expected error: nil
-// Actual error:   %v`, err)
-// 	}
-//
-// 	if errorBody.Error != "Email already exists" {
-// 		t.Errorf(`
-// Expected error: Email already exists
-// Actual error:   %v`, errorBody.Error)
-// 	}
-// }
