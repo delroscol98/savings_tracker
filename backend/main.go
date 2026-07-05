@@ -42,6 +42,7 @@ func main() {
 	serveMux.Handle("GET /app", http.StripPrefix("/app", api.MiddlewareMetricInc(http.FileServer(http.Dir(ROOTDIR)))))
 	serveMux.Handle("GET /health", api.MiddlewareLog(http.HandlerFunc(api.CheckHealthHandler)))
 	serveMux.Handle("POST /api/users", api.MiddlewareLog(http.HandlerFunc(api.CreateUserHandler)))
+	serveMux.Handle("POST /api/login", api.MiddlewareLog(http.HandlerFunc(api.LoginUserHandler)))
 
 	// START THE SERVER
 	server := http.Server{
