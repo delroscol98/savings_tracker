@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/delroscol98/savings_tracker/backend/handlers"
+	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/google/uuid"
 )
@@ -148,5 +149,120 @@ func TestCreateUserHandler(t *testing.T) {
 				tt.checkUser(t, user)
 			}
 		})
+	}
+}
+
+func TestLoginHandler(t *testing.T) {
+	// Cases:
+	// 1. valid login
+	// 2. incorrect email
+	// 3. incorrect password
+	// 4. database error
+
+	tests := []struct {
+		name       string
+		body       io.Reader
+		wantStatus int
+		wantErr    string
+		setupMock  func(*mockDB)
+	}{
+		{
+			name:       "valid login",
+			body:       strings.NewReader(`{"email": "test@example.com", "password": "ThisIsATestPassword"}`),
+			wantStatus: http.StatusOK,
+			wantErr:    "",
+			setupMock: func(md *mockDB) {
+				password := "ThisIsATestPassword"
+				hash, _ := auth.HashPassword(password)
+
+				md.users["test@example.com"] = database.User{
+					ID:             uuid.New(),
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
+					Email:          "test@example.com",
+					HashedPassword: hash,
+				}
+			},
+		},
+		{
+			name:       "incorrect email",
+			body:       strings.NewReader(`{"email": "wrong@example.com", "password": "ThisIsATestPassword"}`),
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "User not found",
+			setupMock: func(md *mockDB) {
+				password := "ThisIsATestPassword"
+				hash, _ := auth.HashPassword(password)
+
+				md.users["test@example.com"] = database.User{
+					ID:             uuid.New(),
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
+					Email:          "test@example.com",
+					HashedPassword: hash,
+				}
+			},
+		},
+		{
+			name:       "incorrect password",
+			body:       strings.NewReader(`{"email": "test@example.com", "password": "WrongPassword"}`),
+			wantStatus: http.StatusForbidden,
+			wantErr:    "Incorrect email or password",
+			setupMock: func(md *mockDB) {
+				password := "ThisIsATestPassword"
+				hash, _ := auth.HashPassword(password)
+
+				md.users["test@example.com"] = database.User{
+					ID:             uuid.New(),
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
+					Email:          "test@example.com",
+					HashedPassword: hash,
+				}
+			},
+		},
+		{
+			name:       "database error",
+			body:       strings.NewReader(`{"email": "test@example.com", "password": "WrongPassword"}`),
+			wantStatus: http.StatusInternalServerError,
+			wantErr:    "Unexpected database failure",
+			setupMock: func(md *mockDB) {
+				md.LoginErr = errors.New("Unexpected database failure")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(
+			tt.name, func(t *testing.T) {
+				md := &mockDB{users: make(map[string]database.User)}
+				tt.setupMock(md)
+
+				api := handlers.ApiConfig{DatabaseQueries: md}
+				w := httptest.NewRecorder()
+				r := httptest.NewRequest(http.MethodPost, "/api/login", tt.body)
+				r.Header.Set("Content-Type", "application/json")
+				api.LoginUserHandler(w, r)
+
+				if w.Code != tt.wantStatus {
+					t.Errorf(`
+Expected status code: %v
+Actual status code:   %v
+`, tt.wantStatus, w.Code)
+				}
+
+				if tt.wantErr != "" {
+					var body map[string]interface{}
+					if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+						t.Fatalf("failed to decode response body: %v", err)
+					}
+					if body["error"] != tt.wantErr {
+						t.Errorf(`
+Expected error string: %v
+Actual error string:   %v
+`, tt.wantErr, body["error"])
+					}
+				}
+			},
+		)
 	}
 }
