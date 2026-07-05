@@ -2,6 +2,7 @@ package handlers_test
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/delroscol98/savings_tracker/backend/internal/auth"
@@ -14,6 +15,7 @@ import (
 type mockDB struct {
 	pingErr       error
 	CreateUserErr error
+	LoginErr      error
 	users         map[string]database.User
 }
 
@@ -45,6 +47,34 @@ func (m *mockDB) CreateUser(ctx context.Context, params database.CreateUserParam
 		HashedPassword: hashedPassword,
 	}
 	m.users[params.Email] = user
+
+	return user, nil
+}
+
+func (m *mockDB) Login(context context.Context, email string) (database.User, error) {
+	if m.LoginErr != nil {
+		return database.User{}, m.LoginErr
+	}
+
+	password1 := "ThisIsATestPassword"
+	password1Hash, _ := auth.HashPassword(password1)
+
+	if m.users == nil {
+		m.users = map[string]database.User{
+			"test-1@example.com": {
+				ID:             uuid.New(),
+				CreatedAt:      time.Now(),
+				UpdatedAt:      time.Now(),
+				Email:          "test-1@example.com",
+				HashedPassword: password1Hash,
+			},
+		}
+	}
+
+	user, ok := m.users[email]
+	if !ok {
+		return database.User{}, sql.ErrNoRows
+	}
 
 	return user, nil
 }

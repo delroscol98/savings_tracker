@@ -10,6 +10,7 @@ import (
 type Database interface {
 	Ping(ctx context.Context) (int32, error)
 	CreateUser(ctx context.Context, params database.CreateUserParams) (database.User, error)
+	Login(ctx context.Context, email string) (database.User, error)
 }
 
 type ApiConfig struct {
