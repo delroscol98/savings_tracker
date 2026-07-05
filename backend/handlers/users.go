@@ -1,12 +1,12 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"time"
 
-	"github.com/delroscol98/savings_tracker/backend/handlers"
 	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/google/uuid"
@@ -86,7 +86,7 @@ func (a *ApiConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	validatedParams, fieldsErrors := handlers.ValidateUserParams(params)
+	validatedParams, fieldsErrors := ValidateUserParams(params)
 	if fieldsErrors != nil {
 		respondWithValidationError(w, http.StatusBadRequest, ValidationErrorBody{
 			Error:  "Invalid parameters for user action",
@@ -97,7 +97,11 @@ func (a *ApiConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := a.DatabaseQueries.Login(r.Context(), validatedParams.Email)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "User not found")
+		if errors.Is(err, sql.ErrNoRows) {
+			respondWithError(w, http.StatusBadRequest, "User not found")
+			return
+		}
+		respondWithError(w, http.StatusInternalServerError, "Unexpected database failure")
 		return
 	}
 
