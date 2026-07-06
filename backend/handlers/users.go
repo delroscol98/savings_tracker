@@ -22,13 +22,19 @@ type User struct {
 	HashedPassword string    `json:"hashed_password"`
 }
 
-type UserParams struct {
+type CreateUserParams struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	FullName string `json:"full_name"`
+}
+
+type LoginParams struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
 func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
-	params := UserParams{}
+	params := CreateUserParams{}
 
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&params)
@@ -37,10 +43,10 @@ func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	validatedParams, fieldsErrors := ValidateUserParams(params)
+	validatedParams, fieldsErrors := ValidateCreateUserParams(params)
 	if fieldsErrors != nil {
 		respondWithValidationError(w, http.StatusBadRequest, ValidationErrorBody{
-			Error:  "Invalid parameters for user action",
+			Error:  "Invalid parameters to create new user",
 			Fields: fieldsErrors,
 		})
 		return
@@ -79,17 +85,17 @@ func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *ApiConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
-	params := UserParams{}
+	params := LoginParams{}
 
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Error decoding body")
 		return
 	}
 
-	validatedParams, fieldsErrors := ValidateUserParams(params)
+	validatedParams, fieldsErrors := ValidateLoginParams(params)
 	if fieldsErrors != nil {
 		respondWithValidationError(w, http.StatusBadRequest, ValidationErrorBody{
-			Error:  "Invalid parameters for user action",
+			Error:  "Incorrect email or password",
 			Fields: fieldsErrors,
 		})
 		return
