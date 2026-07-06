@@ -16,3 +16,8 @@ RETURNING *;
 -- name: Login :one
 SELECT id, created_at, updated_at, email, hashed_password, full_name FROM users
 WHERE $1 = email;
+
+-- name: UpdateUserPassword :exec
+UPDATE users
+SET hashed_password = $2, updated_at = NOW()
+WHERE id = $1;

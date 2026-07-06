@@ -5,10 +5,20 @@
 package database
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+type PasswordResetToken struct {
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	TokenHash  string
+	CreatedAt  time.Time
+	ExpiresAt  time.Time
+	ConsumedAt sql.NullTime
+}
 
 type User struct {
 	ID             uuid.UUID
