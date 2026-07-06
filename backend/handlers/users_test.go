@@ -30,7 +30,7 @@ func TestCreateUserHandler(t *testing.T) {
 	}{
 		{
 			name:       "valid user",
-			body:       strings.NewReader(`{"email": "test@example.com", "password": "` + rawPw + `"}`),
+			body:       strings.NewReader(`{"email": "test@example.com", "password": "` + rawPw + `", "full_name": "John Smith"}`),
 			wantStatus: http.StatusCreated,
 			wantEmail:  "test@example.com",
 			setupMock:  func(md *mockDB) {},
@@ -48,42 +48,42 @@ func TestCreateUserHandler(t *testing.T) {
 		},
 		{
 			name:       "empty email",
-			body:       strings.NewReader(`{"email": "", "password": "` + rawPw + `"}`),
+			body:       strings.NewReader(`{"email": "", "password": "` + rawPw + `", "full_name": "John Smith"}`),
 			wantStatus: http.StatusBadRequest,
-			wantErr:    "Invalid parameters for user action",
+			wantErr:    "Invalid parameters to create new user",
 			setupMock:  func(md *mockDB) {},
 		},
 		{
 			name:       "invalid email",
-			body:       strings.NewReader(`{"email": "ThisIsAnInvalidEmail", "password": "` + rawPw + `"}`),
+			body:       strings.NewReader(`{"email": "ThisIsAnInvalidEmail", "password": "` + rawPw + `", "full_name": "John Smith"}`),
 			wantStatus: http.StatusBadRequest,
-			wantErr:    "Invalid parameters for user action",
+			wantErr:    "Invalid parameters to create new user",
 			setupMock:  func(md *mockDB) {},
 		},
 		{
 			name:       "empty password",
-			body:       strings.NewReader(`{"email": "test@example.com", "password": ""}`),
+			body:       strings.NewReader(`{"email": "test@example.com", "password": "", "full_name": "John Smith"}`),
 			wantStatus: http.StatusBadRequest,
-			wantErr:    "Invalid parameters for user action",
+			wantErr:    "Invalid parameters to create new user",
 			setupMock:  func(md *mockDB) {},
 		},
 		{
 			name:       "too short password",
-			body:       strings.NewReader(`{"email": "test@example.com", "password": "test"}`),
+			body:       strings.NewReader(`{"email": "test@example.com", "password": "test", "full_name": "John Smith"}`),
 			wantStatus: http.StatusBadRequest,
-			wantErr:    "Invalid parameters for user action",
+			wantErr:    "Invalid parameters to create new user",
 			setupMock:  func(md *mockDB) {},
 		},
 		{
 			name:       "too long password",
-			body:       strings.NewReader(`{"email": "test@example.com", "password": "ThisPasswordIsLongerThan128CharactersSoThatWeCanTestThatOurSystemHandlesItProperlyWithoutAnyIssuesOrUnexpectedBehaviorWhenCreatingAUserWithThisVeryLongPassword1234567890"}`),
+			body:       strings.NewReader(`{"email": "test@example.com", "password": "ThisPasswordIsLongerThan128CharactersSoThatWeCanTestThatOurSystemHandlesItProperlyWithoutAnyIssuesOrUnexpectedBehaviorWhenCreatingAUserWithThisVeryLongPassword1234567890", "full_name": "John Smith"}`),
 			wantStatus: http.StatusBadRequest,
-			wantErr:    "Invalid parameters for user action",
+			wantErr:    "Invalid parameters to create new user",
 			setupMock:  func(md *mockDB) {},
 		},
 		{
 			name: "duplicate email",
-			body: strings.NewReader(`{"email": "test@example.com", "password": "` + rawPw + `"}`),
+			body: strings.NewReader(`{"email": "test@example.com", "password": "` + rawPw + `", "full_name": "John Smith"}`),
 			setupMock: func(md *mockDB) {
 				md.users["test@example.com"] = database.User{
 					ID:        uuid.New(),
@@ -96,6 +96,13 @@ func TestCreateUserHandler(t *testing.T) {
 			wantErr:    "Email already exists",
 		},
 		{
+			name:       "empty full name",
+			body:       strings.NewReader(`{"email": "test@example.com", "password": "` + rawPw + `", "full_name": ""}`),
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "Invalid parameters to create new user",
+			setupMock:  func(md *mockDB) {},
+		},
+		{
 			name:       "empty body",
 			body:       nil,
 			wantStatus: http.StatusBadRequest,
@@ -104,7 +111,7 @@ func TestCreateUserHandler(t *testing.T) {
 		},
 		{
 			name: "db error",
-			body: strings.NewReader(`{"email": "test@example.com", "password": "` + rawPw + `"}`),
+			body: strings.NewReader(`{"email": "test@example.com", "password": "` + rawPw + `", "full_name": "John Smith"}`),
 			setupMock: func(md *mockDB) {
 				md.CreateUserErr = errors.New("connection refused")
 			},

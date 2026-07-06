@@ -45,6 +45,7 @@ func (m *mockDB) CreateUser(ctx context.Context, params database.CreateUserParam
 		UpdatedAt:      time.Now(),
 		Email:          params.Email,
 		HashedPassword: hashedPassword,
+		FullName:       params.FullName,
 	}
 	m.users[params.Email] = user
 
