@@ -108,3 +108,59 @@ func TestValidateCreateUserParams(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateLoginParams(t *testing.T) {
+	tests := []struct {
+		name        string
+		params      handlers.LoginParams
+		fieldErrors handlers.FieldErrors
+	}{
+		{
+			name: "valid params",
+			params: handlers.LoginParams{
+				Email:    "test@example.com",
+				Password: "ThisIsATestPassword",
+			},
+			fieldErrors: nil,
+		},
+		{
+			name: "empty email",
+			params: handlers.LoginParams{
+				Email:    "",
+				Password: "ThisIsATestPassword",
+			},
+			fieldErrors: handlers.FieldErrors{
+				"email": []string{"Email cannot be empty", "Invalid email"},
+			},
+		},
+		{
+			name: "invalid email",
+			params: handlers.LoginParams{
+				Email:    "invalidemail",
+				Password: "ThisIsATestPassword",
+			},
+			fieldErrors: handlers.FieldErrors{
+				"email": []string{"Invalid email"},
+			},
+		},
+		{
+			name: "empty password",
+			params: handlers.LoginParams{
+				Email:    "test@example.com",
+				Password: "",
+			},
+			fieldErrors: handlers.FieldErrors{
+				"password": []string{"Password cannot be empty"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, fieldErrors := handlers.ValidateLoginParams(tt.params)
+			if !cmp.Equal(fieldErrors, tt.fieldErrors) {
+				t.Errorf("FieldErrors structs do not match:\n%v", cmp.Diff(fieldErrors, tt.fieldErrors))
+			}
+		})
+	}
+}
