@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// MIGRATIONS
-	migration001, err := os.ReadFile("../sql/schema/001_users.sql")
+	migration001, err := os.ReadFile("../sql/schema/001_create_users.sql")
 	if err != nil {
 		log.Fatalf("Error reading schema: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Error executing up migration: %v", err)
 	}
 
-	migration002, err := os.ReadFile("../sql/schema/002_hashed_passwords.sql")
+	migration002, err := os.ReadFile("../sql/schema/002_add_hashed_passwords_to_users.sql")
 	if err != nil {
 		log.Fatalf("Error reading schema: %v", err)
 	}
@@ -64,6 +64,18 @@ func TestMain(m *testing.M) {
 	upMigration002 := migration002Split[0]
 	downMigration002 := migration002Split[1]
 	_, err = db.Exec(string(upMigration002))
+	if err != nil {
+		log.Fatalf("Error executing up migration: %v", err)
+	}
+
+	migration003, err := os.ReadFile("../sql/schema/003_add_fullname_to_users.sql")
+	if err != nil {
+		log.Fatalf("Error reading schema: %v", err)
+	}
+	migration003Split := bytes.Split(migration003, []byte("\n-- +goose Down\n"))
+	upMigration003 := migration003Split[0]
+	downMigration003 := migration003Split[1]
+	_, err = db.Exec(string(upMigration003))
 	if err != nil {
 		log.Fatalf("Error executing up migration: %v", err)
 	}
@@ -82,6 +94,11 @@ func TestMain(m *testing.M) {
 	testServer = httptest.NewServer(serveMux)
 
 	code := m.Run()
+	_, err = db.Exec(string(downMigration003))
+	if err != nil {
+		log.Fatalf("Error executing down migration: %v", err)
+	}
+
 	_, err = db.Exec(string(downMigration002))
 	if err != nil {
 		log.Fatalf("Error executing down migration: %v", err)
@@ -101,6 +118,7 @@ func TestCreateUserHandler_Integration(t *testing.T) {
 		name       string
 		email      string
 		password   string
+		fullname   string
 		wantStatus int
 		wantErr    string
 		seedDB     func(*testing.T)
@@ -110,6 +128,7 @@ func TestCreateUserHandler_Integration(t *testing.T) {
 			name:       "valid user",
 			email:      "test1@example.com",
 			password:   "ThisIsATestPassword",
+			fullname:   "John Smith",
 			wantStatus: http.StatusCreated,
 			wantErr:    "",
 			seedDB:     func(t *testing.T) {},
@@ -129,6 +148,7 @@ func TestCreateUserHandler_Integration(t *testing.T) {
 			name:       "duplicate email",
 			email:      "test2@example.com",
 			password:   "ThisIsATestPassword",
+			fullname:   "John Smith",
 			wantStatus: http.StatusConflict,
 			wantErr:    "Email already exists",
 			seedDB: func(t *testing.T) {
@@ -151,8 +171,9 @@ func TestCreateUserHandler_Integration(t *testing.T) {
 			name:       "empty email",
 			email:      "",
 			password:   "ThisIsATestPassword",
+			fullname:   "John Smith",
 			wantStatus: http.StatusBadRequest,
-			wantErr:    "Invalid parameters for user action",
+			wantErr:    "Invalid parameters to create new user",
 			seedDB:     func(t *testing.T) {},
 			checkUser:  nil,
 		},
@@ -160,8 +181,9 @@ func TestCreateUserHandler_Integration(t *testing.T) {
 			name:       "invalid email",
 			email:      "invalidemail",
 			password:   "ThisIsATestPassword",
+			fullname:   "John Smith",
 			wantStatus: http.StatusBadRequest,
-			wantErr:    "Invalid parameters for user action",
+			wantErr:    "Invalid parameters to create new user",
 			seedDB:     func(t *testing.T) {},
 			checkUser:  nil,
 		},
@@ -169,8 +191,9 @@ func TestCreateUserHandler_Integration(t *testing.T) {
 			name:       "empty password",
 			email:      "test3@example.com",
 			password:   "",
+			fullname:   "John Smith",
 			wantStatus: http.StatusBadRequest,
-			wantErr:    "Invalid parameters for user action",
+			wantErr:    "Invalid parameters to create new user",
 			seedDB:     func(t *testing.T) {},
 			checkUser:  nil,
 		},
@@ -178,8 +201,9 @@ func TestCreateUserHandler_Integration(t *testing.T) {
 			name:       "too short password",
 			email:      "test4@example.com",
 			password:   "test",
+			fullname:   "John Smith",
 			wantStatus: http.StatusBadRequest,
-			wantErr:    "Invalid parameters for user action",
+			wantErr:    "Invalid parameters to create new user",
 			seedDB:     func(t *testing.T) {},
 			checkUser:  nil,
 		},
@@ -187,8 +211,19 @@ func TestCreateUserHandler_Integration(t *testing.T) {
 			name:       "too long password",
 			email:      "test5@example.com",
 			password:   "ThisPasswordIsLongerThan128CharactersSoThatWeCanTestThatOurSystemHandlesItProperlyWithoutAnyIssuesOrUnexpectedBehaviorWhenCreatingAUserWithThisVeryLongPassword1234567890",
+			fullname:   "John Smith",
 			wantStatus: http.StatusBadRequest,
-			wantErr:    "Invalid parameters for user action",
+			wantErr:    "Invalid parameters to create new user",
+			seedDB:     func(t *testing.T) {},
+			checkUser:  nil,
+		},
+		{
+			name:       "empty full name",
+			email:      "test5@example.com",
+			password:   "ThisPasswordIsLongerThan128CharactersSoThatWeCanTestThatOurSystemHandlesItProperlyWithoutAnyIssuesOrUnexpectedBehaviorWhenCreatingAUserWithThisVeryLongPassword1234567890",
+			fullname:   "",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "Invalid parameters to create new user",
 			seedDB:     func(t *testing.T) {},
 			checkUser:  nil,
 		},
@@ -198,7 +233,7 @@ func TestCreateUserHandler_Integration(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.seedDB(t)
 
-			params := strings.NewReader(fmt.Sprintf(`{"email": "%v", "password": "%v"}`, tt.email, tt.password))
+			params := strings.NewReader(fmt.Sprintf(`{"email": "%v", "password": "%v", "full_name": "%v"}`, tt.email, tt.password, tt.fullname))
 			resp, err := http.Post(testServer.URL+"/api/users", "application/json", params)
 			if err != nil {
 				t.Fatalf("Error sending post request: %v", err)
