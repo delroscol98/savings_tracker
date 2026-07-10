@@ -8,16 +8,13 @@ import (
 	"net/mail"
 	"net/netip"
 	"strings"
+	"time"
 
 	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 )
 
 func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.Request) {
-	type requestPasswordResetbody struct {
-		Email string `json:"email"`
-	}
-
 	body := requestPasswordResetbody{}
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&body)
@@ -54,7 +51,12 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 
 	user, err := a.DatabaseQueries.GetUserByEmail(r.Context(), body.Email)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "User not found")
+		log.Print("User not found")
+		respondWithJSON(w, http.StatusOK, struct {
+			Message string `json:"message"`
+		}{
+			Message: "If the email exists, a reset link has been sent",
+		})
 		return
 	}
 
@@ -71,7 +73,7 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 
 	err = qtx.DeactivateUserTokens(r.Context(), user.ID)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Error deactivating user tokens")
+		respondWithError(w, http.StatusInternalServerError, "Error deactivating user tokens")
 		return
 	}
 
@@ -87,7 +89,7 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 		TokenHash: tokenHash,
 	})
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Error storing password reset token")
+		respondWithError(w, http.StatusInternalServerError, "Error storing password reset token")
 		return
 	}
 
@@ -107,4 +109,84 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 	}{
 		Message: "If the email exists, a reset link has been sent",
 	})
+}
+
+func (a *ApiConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	body := ResetPasswordParams{}
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&body)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Error decoding body")
+		return
+	}
+
+	body, fieldsErrors := ValidateResetResetPasswordParams(body)
+	if fieldsErrors != nil {
+		respondWithValidationError(w, http.StatusBadRequest, ValidationErrorBody{
+			Error:  "Invalid parameters to reset password",
+			Fields: fieldsErrors,
+		})
+		return
+	}
+
+	hashToken := auth.HashToken(body.Token)
+
+	passwordResetToken, err := a.DatabaseQueries.GetPasswordResetTokenByHash(r.Context(), hashToken)
+	if err != nil || time.Now().After(passwordResetToken.ExpiresAt) {
+		respondWithError(w, http.StatusBadRequest, "Invalid or expired token")
+		return
+	}
+
+	if passwordResetToken.ConsumedAt.Valid && time.Now().After(passwordResetToken.ConsumedAt.Time) {
+		respondWithError(w, http.StatusBadRequest, "Invalid or expired token")
+		return
+	}
+
+	pwHash, err := auth.HashPassword(body.Password)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Begin database transaction
+	tx, err := a.db.BeginTx(r.Context(), nil)
+	if err != nil {
+		errMsg := fmt.Sprintf("Error creating db transaction: %s", err)
+		respondWithError(w, http.StatusInternalServerError, errMsg)
+		return
+	}
+	defer tx.Rollback()
+
+	qtx := database.New(tx)
+
+	err = qtx.UpdateUserPassword(r.Context(), database.UpdateUserPasswordParams{
+		ID:             passwordResetToken.UserID,
+		HashedPassword: pwHash,
+	})
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Error updating password")
+		return
+	}
+
+	err = qtx.ConsumePasswordResetToken(r.Context(), passwordResetToken.ID)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Error consuming password reset token")
+		return
+	}
+
+	// Commit transaction
+	err = tx.Commit()
+	if err != nil {
+		errMsg := fmt.Sprintf("Error committing transaction: %s", err)
+		respondWithError(w, http.StatusInternalServerError, errMsg)
+		return
+	}
+
+	respondWithJSON(
+		w, http.StatusOK, struct {
+			Message string `json:"message"`
+		}{
+			Message: "Password successfully reset",
+		},
+	)
 }
