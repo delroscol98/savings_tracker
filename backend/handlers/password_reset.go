@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/mail"
 	"net/netip"
 	"strings"
 	"time"
@@ -24,18 +23,16 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 	}
 
 	// Email validation
-	body.Email = strings.TrimSpace(body.Email)
-	if body.Email == "" {
-		respondWithError(w, http.StatusBadRequest, "Email cannot be empty")
+	fieldsErrors := make(FieldErrors)
+	body.Email = strings.ToLower(strings.TrimSpace(body.Email))
+	body.Email, fieldsErrors = ValidateEmail(body.Email, fieldsErrors)
+	if fieldsErrors != nil {
+		respondWithValidationError(w, http.StatusBadRequest, ValidationErrorBody{
+			Error:  "Invalid parameters to reset password",
+			Fields: fieldsErrors,
+		})
 		return
 	}
-
-	parsedAddress, err := mail.ParseAddress(body.Email)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid email")
-		return
-	}
-	body.Email = parsedAddress.Address
 
 	ip := "unknown"
 	ipPort, err := netip.ParseAddrPort(r.RemoteAddr)
