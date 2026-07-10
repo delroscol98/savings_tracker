@@ -18,7 +18,7 @@ type Database interface {
 	CreatePasswordResetToken(ctx context.Context, params database.CreatePasswordResetTokenParams) (database.PasswordResetToken, error)
 	GetPasswordResetTokenByHash(ctx context.Context, tokenHash string) (database.PasswordResetToken, error)
 	ConsumePasswordResetToken(ctx context.Context, id uuid.UUID) error
-	DeactiveUserTokens(ctx context.Context, userID uuid.UUID) error
+	DeactivateUserTokens(ctx context.Context, userID uuid.UUID) error
 	UpdateUserPassword(ctx context.Context, params database.UpdateUserPasswordParams) error
 }
 
