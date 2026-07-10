@@ -5,33 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
-	"github.com/google/uuid"
 
 	"github.com/lib/pq"
 )
-
-type User struct {
-	Id             uuid.UUID `json:"id"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
-	Email          string    `json:"email"`
-	HashedPassword string    `json:"hashed_password"`
-}
-
-type CreateUserParams struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	FullName string `json:"full_name"`
-}
-
-type LoginParams struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
 
 func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	params := CreateUserParams{}
