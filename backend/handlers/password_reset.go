@@ -26,7 +26,7 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 	fieldsErrors := make(FieldErrors)
 	body.Email = strings.ToLower(strings.TrimSpace(body.Email))
 	body.Email, fieldsErrors = ValidateEmail(body.Email, fieldsErrors)
-	if fieldsErrors != nil {
+	if len(fieldsErrors) != 0 {
 		respondWithValidationError(w, http.StatusBadRequest, ValidationErrorBody{
 			Error:  "Invalid parameters to reset password",
 			Fields: fieldsErrors,
