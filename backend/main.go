@@ -12,6 +12,7 @@ import (
 
 	"github.com/delroscol98/savings_tracker/backend/handlers"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
+	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
 	"github.com/joho/godotenv"
 
 	_ "github.com/lib/pq"
@@ -35,6 +36,7 @@ func main() {
 	dbQueries := database.New(db)
 	api := &handlers.ApiConfig{
 		DatabaseQueries: dbQueries,
+		RateLimiter:     ratelimit.New(5, 15*time.Minute),
 	}
 
 	// SERVER MULTIPLEXER
