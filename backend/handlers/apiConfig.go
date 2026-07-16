@@ -25,6 +25,6 @@ type Database interface {
 type ApiConfig struct {
 	FileserverHits  atomic.Int32
 	DatabaseQueries Database
-	db              *sql.DB
+	Db              *sql.DB
 	RateLimiter     *ratelimit.RateLimiter
 }

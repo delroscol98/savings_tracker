@@ -58,7 +58,7 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 	}
 
 	// Begin database transaction
-	tx, err := a.db.BeginTx(r.Context(), nil)
+	tx, err := a.Db.BeginTx(r.Context(), nil)
 	if err != nil {
 		errMsg := fmt.Sprintf("Error creating db transaction: %s", err)
 		respondWithError(w, http.StatusInternalServerError, errMsg)
@@ -146,7 +146,7 @@ func (a *ApiConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Begin database transaction
-	tx, err := a.db.BeginTx(r.Context(), nil)
+	tx, err := a.Db.BeginTx(r.Context(), nil)
 	if err != nil {
 		errMsg := fmt.Sprintf("Error creating db transaction: %s", err)
 		respondWithError(w, http.StatusInternalServerError, errMsg)
