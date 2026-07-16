@@ -12,20 +12,23 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/delroscol98/savings_tracker/backend/handlers"
 	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
+	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
 	"github.com/joho/godotenv"
 
 	_ "github.com/lib/pq"
 )
 
 var (
-	testServer *httptest.Server
-	dbQueries  *database.Queries
+	testServer      *httptest.Server
+	dbQueries       *database.Queries
+	testRateLimiter *ratelimit.RateLimiter
 )
 
 func TestMain(m *testing.M) {
@@ -80,9 +83,24 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Error executing up migration: %v", err)
 	}
 
+	migration004, err := os.ReadFile("../sql/schema/004_create_password_reset_tokens.sql")
+	if err != nil {
+		log.Fatalf("Error reading schema: %v", err)
+	}
+	migration004Split := bytes.Split(migration004, []byte("\n-- +goose Down\n"))
+	upMigration004 := migration004Split[0]
+	downMigration004 := migration004Split[1]
+	_, err = db.Exec(string(upMigration004))
+	if err != nil {
+		log.Fatalf("Error executing up migration: %v", err)
+	}
+
+	testRateLimiter = ratelimit.New(5, 15*time.Minute)
 	dbQueries = database.New(db)
 	api := &handlers.ApiConfig{
 		DatabaseQueries: dbQueries,
+		Db:              db,
+		RateLimiter:     testRateLimiter,
 	}
 
 	// SERVER MULTIPLEXER
@@ -90,10 +108,16 @@ func TestMain(m *testing.M) {
 	serveMux.Handle("GET /health", api.MiddlewareLog(http.HandlerFunc(api.CheckHealthHandler)))
 	serveMux.Handle("POST /api/users", api.MiddlewareLog(http.HandlerFunc(api.CreateUserHandler)))
 	serveMux.Handle("POST /api/login", api.MiddlewareLog(http.HandlerFunc(api.LoginUserHandler)))
+	serveMux.Handle("POST /api/forgot-password", api.MiddlewareLog(http.HandlerFunc(api.RequestPasswordResetHandler)))
 
 	testServer = httptest.NewServer(serveMux)
 
 	code := m.Run()
+	_, err = db.Exec(string(downMigration004))
+	if err != nil {
+		log.Fatalf("Error executing down migration: %v", err)
+	}
+
 	_, err = db.Exec(string(downMigration003))
 	if err != nil {
 		log.Fatalf("Error executing down migration: %v", err)
@@ -363,6 +387,135 @@ func TestLoginHandler_Integration(t *testing.T) {
 
 			params := strings.NewReader(fmt.Sprintf(`{"email": "%v", "password": "%v"}`, tt.email, tt.password))
 			resp, err := http.Post(testServer.URL+"/api/login", "application/json", params)
+			if err != nil {
+				t.Fatalf("Error sending post request: %v", err)
+			}
+
+			if resp.StatusCode != tt.wantStatus {
+				t.Errorf(`
+Expected status code: %v,
+Actual status code:   %v
+`, tt.wantStatus, resp.StatusCode)
+			}
+
+			if tt.wantErr != "" {
+				body := make(map[string]interface{})
+				decoder := json.NewDecoder(resp.Body)
+				err := decoder.Decode(&body)
+				if err != nil {
+					t.Fatalf("failed to decode response body: %v", err)
+				}
+
+				if body["error"] != tt.wantErr {
+					t.Errorf(`
+Expected error: %v,
+Actual error:   %v
+`, tt.wantErr, body["error"])
+				}
+			}
+		})
+	}
+}
+
+func TestRequestPasswordResetHandler_Integration(t *testing.T) {
+	tests := []struct {
+		name             string
+		email            string
+		password         string
+		wantStatus       int
+		wantErr          string
+		seedDB           func(*testing.T)
+		setupRateLimiter func()
+	}{
+		{
+			name:       "valid request",
+			email:      "bar@example.com",
+			wantStatus: http.StatusOK,
+			wantErr:    "",
+			seedDB: func(t *testing.T) {
+				hashedPw, err := auth.HashPassword("AnotherTestPassword")
+				if err != nil {
+					t.Fatalf("Failed to hash password: %v", err)
+				}
+
+				_, err = dbQueries.CreateUser(context.Background(), database.CreateUserParams{
+					Email:          "bar@example.com",
+					HashedPassword: hashedPw,
+					FullName:       "John Smith",
+				})
+				if err != nil {
+					t.Fatalf("Failed to seed new user: %v", err)
+				}
+			},
+			setupRateLimiter: func() {},
+		},
+		{
+			name:             "empty email",
+			email:            "",
+			wantStatus:       http.StatusBadRequest,
+			wantErr:          "Invalid parameters to reset password",
+			seedDB:           func(t *testing.T) {},
+			setupRateLimiter: func() {},
+		},
+		{
+			name:       "email not found",
+			email:      "john@example.com",
+			wantStatus: http.StatusOK,
+			wantErr:    "",
+			seedDB: func(t *testing.T) {
+				hashedPw, err := auth.HashPassword("AnotherTestPassword")
+				if err != nil {
+					t.Fatalf("Failed to hash password: %v", err)
+				}
+
+				_, err = dbQueries.CreateUser(context.Background(), database.CreateUserParams{
+					Email:          "jane@example.com",
+					HashedPassword: hashedPw,
+					FullName:       "Jane Smith",
+				})
+				if err != nil {
+					t.Fatalf("Failed to seed new user: %v", err)
+				}
+			},
+			setupRateLimiter: func() {},
+		},
+		{
+			name:       "rate limited",
+			email:      "john@example.com",
+			wantStatus: http.StatusTooManyRequests,
+			wantErr:    "Exceeded password reset limit",
+			seedDB: func(t *testing.T) {
+				hashedPw, err := auth.HashPassword("AnotherTestPassword")
+				if err != nil {
+					t.Fatalf("Failed to hash password: %v", err)
+				}
+
+				_, err = dbQueries.CreateUser(context.Background(), database.CreateUserParams{
+					Email:          "josh@example.com",
+					HashedPassword: hashedPw,
+					FullName:       "Jane Smith",
+				})
+				if err != nil {
+					t.Fatalf("Failed to seed new user: %v", err)
+				}
+			},
+			setupRateLimiter: func() {
+				for i := 0; i < 5; i++ {
+					testRateLimiter.Allow("127.0.0.1")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.seedDB(t)
+			if tt.setupRateLimiter != nil {
+				tt.setupRateLimiter()
+			}
+
+			body := strings.NewReader(fmt.Sprintf(`{"email": "%v"}`, tt.email))
+			resp, err := http.Post(testServer.URL+"/api/forgot-password", "application/json", body)
 			if err != nil {
 				t.Fatalf("Error sending post request: %v", err)
 			}
