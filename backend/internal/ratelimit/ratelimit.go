@@ -51,7 +51,7 @@ func (rl *RateLimiter) Allow(ip string) bool {
 	return e.count <= rl.limit
 }
 
-func (rl *RateLimiter) Reset(ip string) {
+func (rl *RateLimiter) Reset() {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
