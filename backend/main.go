@@ -14,6 +14,7 @@ import (
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
 	"github.com/joho/godotenv"
+	"github.com/resend/resend-go/v3"
 
 	_ "github.com/lib/pq"
 )
@@ -34,9 +35,20 @@ func main() {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
 	dbQueries := database.New(db)
+
+	// Resend
+	resendApiKey := os.Getenv("RESEND_API_KEY")
+	fromEmail := os.Getenv("FROM_EMAIL")
+	resendSender := handlers.ResendSender{
+		Client: resend.NewClient(resendApiKey),
+		From:   fromEmail,
+	}
+
+	// API setup
 	api := &handlers.ApiConfig{
 		DatabaseQueries: dbQueries,
 		RateLimiter:     ratelimit.New(5, 15*time.Minute),
+		EmailSender:     &resendSender,
 	}
 
 	// SERVER MULTIPLEXER

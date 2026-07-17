@@ -22,9 +22,14 @@ type Database interface {
 	UpdateUserPassword(ctx context.Context, params database.UpdateUserPasswordParams) error
 }
 
+type EmailSender interface {
+	Send(to, subject, html string) error
+}
+
 type ApiConfig struct {
 	FileserverHits  atomic.Int32
 	DatabaseQueries Database
 	Db              *sql.DB
 	RateLimiter     *ratelimit.RateLimiter
+	EmailSender     EmailSender
 }
