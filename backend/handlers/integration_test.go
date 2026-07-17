@@ -109,6 +109,7 @@ func TestMain(m *testing.M) {
 	serveMux.Handle("POST /api/users", api.MiddlewareLog(http.HandlerFunc(api.CreateUserHandler)))
 	serveMux.Handle("POST /api/login", api.MiddlewareLog(http.HandlerFunc(api.LoginUserHandler)))
 	serveMux.Handle("POST /api/forgot-password", api.MiddlewareLog(http.HandlerFunc(api.RequestPasswordResetHandler)))
+	serveMux.Handle("POST /api/reset-password", api.MiddlewareLog(http.HandlerFunc(api.ResetPasswordHandler)))
 
 	testServer = httptest.NewServer(serveMux)
 

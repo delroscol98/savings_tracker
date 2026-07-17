@@ -110,7 +110,7 @@ func ValidateResetResetPasswordParams(params ResetPasswordParams) (ResetPassword
 	fieldsErrors := make(FieldErrors)
 
 	// Password validation
-	params.Password = strings.ToLower(strings.TrimSpace(params.Password))
+	params.Password = strings.TrimSpace(params.Password)
 	fieldsErrors = ValidatePassword(params.Password, fieldsErrors)
 
 	// Check for any error messages
