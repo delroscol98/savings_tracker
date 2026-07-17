@@ -100,6 +100,13 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 
 	link := fmt.Sprintf("http://%v/reset-password?token=%v", r.Host, token)
 	log.Printf("Password reset link: %v", link)
+	err = a.EmailSender.Send(user.Email, "Savings-Tracker: Reset Your Password", fmt.Sprintf(`
+<p>Click the following <a href=\"%s\">link</a> to reset your password.</p>
+	`, link))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error sending reset password link")
+		return
+	}
 
 	respondWithJSON(w, http.StatusOK, struct {
 		Message string `json:"message"`
