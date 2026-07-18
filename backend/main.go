@@ -48,6 +48,7 @@ func main() {
 	api := &handlers.ApiConfig{
 		DatabaseQueries: dbQueries,
 		RateLimiter:     ratelimit.New(5, 15*time.Minute),
+		Db:              db,
 		EmailSender:     &resendSender,
 	}
 
