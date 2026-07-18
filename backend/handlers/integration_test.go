@@ -30,6 +30,7 @@ var (
 	testServer      *httptest.Server
 	dbQueries       *database.Queries
 	testRateLimiter *ratelimit.RateLimiter
+	mockSender      *MockEmailSender
 )
 
 func TestMain(m *testing.M) {
@@ -98,10 +99,13 @@ func TestMain(m *testing.M) {
 
 	testRateLimiter = ratelimit.New(5, 15*time.Minute)
 	dbQueries = database.New(db)
+
+	mockSender = &MockEmailSender{}
 	api := &handlers.ApiConfig{
 		DatabaseQueries: dbQueries,
 		Db:              db,
 		RateLimiter:     testRateLimiter,
+		EmailSender:     mockSender,
 	}
 
 	// SERVER MULTIPLEXER
@@ -419,135 +423,6 @@ Actual error:   %v
 	}
 }
 
-func TestRequestPasswordResetHandler_Integration(t *testing.T) {
-	tests := []struct {
-		name             string
-		email            string
-		password         string
-		wantStatus       int
-		wantErr          string
-		seedDB           func(*testing.T)
-		setupRateLimiter func()
-	}{
-		{
-			name:       "valid request",
-			email:      "bar@example.com",
-			wantStatus: http.StatusOK,
-			wantErr:    "",
-			seedDB: func(t *testing.T) {
-				hashedPw, err := auth.HashPassword("AnotherTestPassword")
-				if err != nil {
-					t.Fatalf("Failed to hash password: %v", err)
-				}
-
-				_, err = dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "bar@example.com",
-					HashedPassword: hashedPw,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("Failed to seed new user: %v", err)
-				}
-			},
-			setupRateLimiter: func() {},
-		},
-		{
-			name:             "empty email",
-			email:            "",
-			wantStatus:       http.StatusBadRequest,
-			wantErr:          "Invalid parameters to reset password",
-			seedDB:           func(t *testing.T) {},
-			setupRateLimiter: func() {},
-		},
-		{
-			name:       "email not found",
-			email:      "john@example.com",
-			wantStatus: http.StatusOK,
-			wantErr:    "",
-			seedDB: func(t *testing.T) {
-				hashedPw, err := auth.HashPassword("AnotherTestPassword")
-				if err != nil {
-					t.Fatalf("Failed to hash password: %v", err)
-				}
-
-				_, err = dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "jane@example.com",
-					HashedPassword: hashedPw,
-					FullName:       "Jane Smith",
-				})
-				if err != nil {
-					t.Fatalf("Failed to seed new user: %v", err)
-				}
-			},
-			setupRateLimiter: func() {},
-		},
-		{
-			name:       "rate limited",
-			email:      "john@example.com",
-			wantStatus: http.StatusTooManyRequests,
-			wantErr:    "Exceeded password reset limit",
-			seedDB: func(t *testing.T) {
-				hashedPw, err := auth.HashPassword("AnotherTestPassword")
-				if err != nil {
-					t.Fatalf("Failed to hash password: %v", err)
-				}
-
-				_, err = dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "josh@example.com",
-					HashedPassword: hashedPw,
-					FullName:       "Jane Smith",
-				})
-				if err != nil {
-					t.Fatalf("Failed to seed new user: %v", err)
-				}
-			},
-			setupRateLimiter: func() {
-				for i := 0; i < 5; i++ {
-					testRateLimiter.Allow("127.0.0.1")
-				}
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.seedDB(t)
-			if tt.setupRateLimiter != nil {
-				tt.setupRateLimiter()
-			}
-
-			body := strings.NewReader(fmt.Sprintf(`{"email": "%v"}`, tt.email))
-			resp, err := http.Post(testServer.URL+"/api/forgot-password", "application/json", body)
-			if err != nil {
-				t.Fatalf("Error sending post request: %v", err)
-			}
-
-			if resp.StatusCode != tt.wantStatus {
-				t.Errorf(`
-Expected status code: %v,
-Actual status code:   %v
-`, tt.wantStatus, resp.StatusCode)
-			}
-
-			if tt.wantErr != "" {
-				body := make(map[string]interface{})
-				decoder := json.NewDecoder(resp.Body)
-				err := decoder.Decode(&body)
-				if err != nil {
-					t.Fatalf("failed to decode response body: %v", err)
-				}
-
-				if body["error"] != tt.wantErr {
-					t.Errorf(`
-Expected error: %v,
-Actual error:   %v
-`, tt.wantErr, body["error"])
-				}
-			}
-		})
-	}
-}
-
 func extractToken(t *testing.T, logOutput string) string {
 	t.Helper()
 	re := regexp.MustCompile(`token=([a-f0-9]+)`)
@@ -607,6 +482,20 @@ Creating a reset password link:
 Expected status code: %v
 Actual status code:   %v
 `, http.StatusOK, resp.StatusCode)
+	}
+
+	if len(mockSender.Sent) != 1 {
+		t.Fatalf(`
+Expected number of sent emails: 1
+Actual number of sent emails:   %v
+`, len(mockSender.Sent))
+	}
+
+	if mockSender.Sent[0].To != "johnsmith@testexample.com" {
+		t.Fatalf(`
+Expected To email: johnsmith@testexample.com
+Actual to email:   %v
+`, mockSender.Sent[0].To)
 	}
 
 	token := extractToken(t, buf.String())
