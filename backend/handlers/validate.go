@@ -68,7 +68,7 @@ func ValidateCreateUserParams(params CreateUserParams) (CreateUserParams, FieldE
 	params.Email, fieldsErrors = ValidateEmail(params.Email, fieldsErrors)
 
 	// Password validation
-	params.Password = strings.ToLower(strings.TrimSpace(params.Password))
+	params.Password = strings.TrimSpace(params.Password)
 	fieldsErrors = ValidatePassword(params.Password, fieldsErrors)
 
 	// Full name validation
