@@ -7,17 +7,21 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
 	"github.com/delroscol98/savings_tracker/backend/handlers"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
+	"github.com/delroscol98/savings_tracker/backend/internal/middleware"
 	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
 	"github.com/joho/godotenv"
 	"github.com/resend/resend-go/v3"
 
 	_ "github.com/lib/pq"
 )
+
+var serverHits atomic.Int32
 
 func main() {
 	// CONSTANTS
@@ -54,12 +58,12 @@ func main() {
 
 	// SERVER MULTIPLEXER
 	serveMux := http.NewServeMux()
-	serveMux.Handle("GET /app", http.StripPrefix("/app", api.MiddlewareMetricInc(http.FileServer(http.Dir(ROOTDIR)))))
-	serveMux.Handle("GET /health", api.MiddlewareLog(http.HandlerFunc(api.CheckHealthHandler)))
-	serveMux.Handle("POST /api/users", api.MiddlewareLog(http.HandlerFunc(api.CreateUserHandler)))
-	serveMux.Handle("POST /api/login", api.MiddlewareLog(http.HandlerFunc(api.LoginUserHandler)))
-	serveMux.Handle("POST /api/forgot-password", api.MiddlewareLog(http.HandlerFunc(api.RequestPasswordResetHandler)))
-	serveMux.Handle("POST /api/reset-password", api.MiddlewareLog(http.HandlerFunc(api.ResetPasswordHandler)))
+	serveMux.Handle("GET /app", http.StripPrefix("/app", middleware.MetricInc(&serverHits, http.FileServer(http.Dir(ROOTDIR)))))
+	serveMux.Handle("GET /health", middleware.Log(http.HandlerFunc(api.CheckHealthHandler)))
+	serveMux.Handle("POST /api/users", middleware.Log(http.HandlerFunc(api.CreateUserHandler)))
+	serveMux.Handle("POST /api/login", middleware.Log(http.HandlerFunc(api.LoginUserHandler)))
+	serveMux.Handle("POST /api/forgot-password", middleware.Log(http.HandlerFunc(api.RequestPasswordResetHandler)))
+	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(api.ResetPasswordHandler)))
 
 	// START THE SERVER
 	server := http.Server{
