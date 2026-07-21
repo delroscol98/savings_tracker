@@ -1,4 +1,4 @@
-package handlers_test
+package auth_test
 
 import (
 	"context"
@@ -14,7 +14,6 @@ import (
 )
 
 type mockDB struct {
-	pingErr                        error
 	CreateUserErr                  error
 	LoginErr                       error
 	GetUserByEmailErr              error
@@ -25,10 +24,6 @@ type mockDB struct {
 	UpdateUserPasswordErr          error
 	users                          map[string]database.User
 	PasswordResetTokens            map[string]database.PasswordResetToken
-}
-
-func (m *mockDB) Ping(ctx context.Context) (int32, error) {
-	return 1, m.pingErr
 }
 
 func (m *mockDB) CreateUser(ctx context.Context, params database.CreateUserParams) (database.User, error) {

@@ -1,19 +1,21 @@
-package handlers_test
+package middleware_test
 
 import (
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 
-	"github.com/delroscol98/savings_tracker/backend/handlers"
+	"github.com/delroscol98/savings_tracker/backend/internal/middleware"
 )
 
+var apiHits atomic.Int32
+
 func TestMiddlewareMetricInc(t *testing.T) {
-	api := handlers.ApiConfig{}
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTeapot)
 	})
-	handler := api.MiddlewareMetricInc(next)
+	handler := middleware.MetricInc(&apiHits, next)
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/app/", nil)
 	handler.ServeHTTP(w, r)
@@ -25,7 +27,7 @@ Actual status code:    %v
 `, http.StatusTeapot, w.Code)
 	}
 
-	hits := api.FileserverHits.Load()
+	hits := apiHits.Load()
 	if hits != 1 {
 		t.Errorf(`
 Expecting FileserverHits: 1

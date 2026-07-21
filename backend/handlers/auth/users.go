@@ -1,4 +1,4 @@
-package handlers
+package auth
 
 import (
 	"database/sql"
@@ -6,14 +6,13 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/delroscol98/savings_tracker/backend/handlers/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
 
 	"github.com/lib/pq"
 )
 
-func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
+func (a *AuthConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	params := CreateUserParams{}
 
 	decoder := json.NewDecoder(r.Body)
@@ -32,13 +31,13 @@ func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashedPW, err := auth.HashPassword(validatedParams.Password)
+	hashedPW, err := HashPassword(validatedParams.Password)
 	if err != nil {
 		response.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	user, err := a.DatabaseQueries.CreateUser(r.Context(), database.CreateUserParams{
+	user, err := a.Queries.CreateUser(r.Context(), database.CreateUserParams{
 		Email:          validatedParams.Email,
 		HashedPassword: hashedPW,
 	})
@@ -64,7 +63,7 @@ func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
-func (a *ApiConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
+func (a *AuthConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	params := LoginParams{}
 
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
@@ -81,7 +80,7 @@ func (a *ApiConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := a.DatabaseQueries.Login(r.Context(), validatedParams.Email)
+	user, err := a.Queries.Login(r.Context(), validatedParams.Email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			response.RespondWithError(w, http.StatusBadRequest, "User not found")
@@ -91,7 +90,7 @@ func (a *ApiConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	match, _ := auth.CheckPasswordHash(params.Password, user.HashedPassword)
+	match, _ := CheckPasswordHash(params.Password, user.HashedPassword)
 	if !match {
 		response.RespondWithError(w, http.StatusForbidden, "Incorrect email or password")
 		return
