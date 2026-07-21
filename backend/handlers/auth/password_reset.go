@@ -1,4 +1,4 @@
-package handlers
+package auth
 
 import (
 	"encoding/json"
@@ -9,12 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/delroscol98/savings_tracker/backend/handlers/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
 )
 
-func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.Request) {
+func (a *AuthConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.Request) {
 	body := requestPasswordResetbody{}
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&body)
@@ -47,7 +46,7 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	user, err := a.DatabaseQueries.GetUserByEmail(r.Context(), body.Email)
+	user, err := a.Queries.GetUserByEmail(r.Context(), body.Email)
 	if err != nil {
 		log.Print("User not found")
 		response.RespondWithJSON(w, http.StatusOK, struct {
@@ -59,7 +58,7 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 	}
 
 	// Begin database transaction
-	tx, err := a.Db.BeginTx(r.Context(), nil)
+	tx, err := a.Database.BeginTx(r.Context(), nil)
 	if err != nil {
 		errMsg := fmt.Sprintf("Error creating db transaction: %s", err)
 		response.RespondWithError(w, http.StatusInternalServerError, errMsg)
@@ -75,12 +74,12 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	token, err := auth.GenerateResetToken()
+	token, err := GenerateResetToken()
 	if err != nil {
 		response.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	tokenHash := auth.HashToken(token)
+	tokenHash := HashToken(token)
 
 	_, err = qtx.CreatePasswordResetToken(r.Context(), database.CreatePasswordResetTokenParams{
 		UserID:    user.ID,
@@ -116,7 +115,7 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 	})
 }
 
-func (a *ApiConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+func (a *AuthConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	body := ResetPasswordParams{}
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&body)
@@ -134,9 +133,9 @@ func (a *ApiConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	hashToken := auth.HashToken(body.Token)
+	hashToken := HashToken(body.Token)
 
-	passwordResetToken, err := a.DatabaseQueries.GetPasswordResetTokenByHash(r.Context(), hashToken)
+	passwordResetToken, err := a.Queries.GetPasswordResetTokenByHash(r.Context(), hashToken)
 	if err != nil || time.Now().After(passwordResetToken.ExpiresAt) {
 		response.RespondWithError(w, http.StatusBadRequest, "Invalid or expired token")
 		return
@@ -147,14 +146,14 @@ func (a *ApiConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	pwHash, err := auth.HashPassword(body.Password)
+	pwHash, err := HashPassword(body.Password)
 	if err != nil {
 		response.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Begin database transaction
-	tx, err := a.Db.BeginTx(r.Context(), nil)
+	tx, err := a.Database.BeginTx(r.Context(), nil)
 	if err != nil {
 		errMsg := fmt.Sprintf("Error creating db transaction: %s", err)
 		response.RespondWithError(w, http.StatusInternalServerError, errMsg)

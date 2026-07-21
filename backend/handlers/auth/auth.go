@@ -1,24 +1,15 @@
 package auth
 
 import (
-	"errors"
+	"database/sql"
 
-	"github.com/alexedwards/argon2id"
+	"github.com/delroscol98/savings_tracker/backend/handlers"
+	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
 )
 
-func HashPassword(password string) (string, error) {
-	passwordHash, err := argon2id.CreateHash(password, argon2id.DefaultParams)
-	if err != nil {
-		return "", errors.New("Error creating password hash")
-	}
-
-	return passwordHash, nil
-}
-
-func CheckPasswordHash(password, hash string) (bool, error) {
-	match, err := argon2id.ComparePasswordAndHash(password, hash)
-
-	// Error handling already done in argon2id. An error always returns false,
-	// But false does not always mean an error != nil
-	return match, err
+type AuthConfig struct {
+	Queries     handlers.Queries
+	Database    *sql.DB
+	RateLimiter *ratelimit.RateLimiter
+	EmailSender handlers.EmailSender
 }

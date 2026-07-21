@@ -17,9 +17,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/delroscol98/savings_tracker/backend/handlers"
 	"github.com/delroscol98/savings_tracker/backend/handlers/auth"
+	"github.com/delroscol98/savings_tracker/backend/handlers/health"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
+	"github.com/delroscol98/savings_tracker/backend/internal/middleware"
 	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
 	"github.com/joho/godotenv"
 
@@ -101,20 +102,23 @@ func TestMain(m *testing.M) {
 	dbQueries = database.New(db)
 
 	mockSender = &MockEmailSender{}
-	api := &handlers.ApiConfig{
-		DatabaseQueries: dbQueries,
-		Db:              db,
-		RateLimiter:     testRateLimiter,
-		EmailSender:     mockSender,
+	authApi := &auth.AuthConfig{
+		Queries:     dbQueries,
+		Database:    db,
+		RateLimiter: testRateLimiter,
+		EmailSender: mockSender,
+	}
+	healthApi := &health.HealthConfig{
+		Queries: dbQueries,
 	}
 
 	// SERVER MULTIPLEXER
 	serveMux := http.NewServeMux()
-	serveMux.Handle("GET /health", api.MiddlewareLog(http.HandlerFunc(api.CheckHealthHandler)))
-	serveMux.Handle("POST /api/users", api.MiddlewareLog(http.HandlerFunc(api.CreateUserHandler)))
-	serveMux.Handle("POST /api/login", api.MiddlewareLog(http.HandlerFunc(api.LoginUserHandler)))
-	serveMux.Handle("POST /api/forgot-password", api.MiddlewareLog(http.HandlerFunc(api.RequestPasswordResetHandler)))
-	serveMux.Handle("POST /api/reset-password", api.MiddlewareLog(http.HandlerFunc(api.ResetPasswordHandler)))
+	serveMux.Handle("GET /health", middleware.Log(http.HandlerFunc(healthApi.CheckHealthHandler)))
+	serveMux.Handle("POST /api/users", middleware.Log(http.HandlerFunc(authApi.CreateUserHandler)))
+	serveMux.Handle("POST /api/login", middleware.Log(http.HandlerFunc(authApi.LoginUserHandler)))
+	serveMux.Handle("POST /api/forgot-password", middleware.Log(http.HandlerFunc(authApi.RequestPasswordResetHandler)))
+	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(authApi.ResetPasswordHandler)))
 
 	testServer = httptest.NewServer(serveMux)
 
@@ -152,7 +156,7 @@ func TestCreateUserHandler_Integration(t *testing.T) {
 		wantStatus int
 		wantErr    string
 		seedDB     func(*testing.T)
-		checkUser  func(*testing.T, *handlers.User)
+		checkUser  func(*testing.T, *auth.User)
 	}{
 		{
 			name:       "valid user",
@@ -162,7 +166,7 @@ func TestCreateUserHandler_Integration(t *testing.T) {
 			wantStatus: http.StatusCreated,
 			wantErr:    "",
 			seedDB:     func(t *testing.T) {},
-			checkUser: func(t *testing.T, u *handlers.User) {
+			checkUser: func(t *testing.T, u *auth.User) {
 				if u.Id == uuid.Nil {
 					t.Error("User ID should not be zero-value")
 				}
@@ -293,7 +297,7 @@ Actual error:   %v
 			}
 
 			if tt.checkUser != nil {
-				user := handlers.User{}
+				user := auth.User{}
 				decoder := json.NewDecoder(resp.Body)
 				err := decoder.Decode(&user)
 				if err != nil {

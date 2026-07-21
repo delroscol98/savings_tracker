@@ -1,18 +1,27 @@
-package handlers_test
+package health_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/delroscol98/savings_tracker/backend/handlers"
+	"github.com/delroscol98/savings_tracker/backend/handlers/health"
 )
 
+type mockHealthDB struct {
+	pingErr error
+}
+
+func (m *mockHealthDB) Ping(ctx context.Context) (int32, error) {
+	return 1, m.pingErr
+}
+
 func TestCheckHealthHandler_DBHealthy(t *testing.T) {
-	api := handlers.ApiConfig{
-		DatabaseQueries: &mockDB{},
+	api := health.HealthConfig{
+		Queries: &mockHealthDB{},
 	}
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/health", nil)
@@ -34,8 +43,8 @@ Actual body:   %v
 }
 
 func TestCheckHealthHandler_DBUnhealthy(t *testing.T) {
-	api := handlers.ApiConfig{
-		DatabaseQueries: &mockDB{pingErr: errors.New("database down")},
+	api := health.HealthConfig{
+		Queries: &mockHealthDB{pingErr: errors.New("database down")},
 	}
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/health", nil)

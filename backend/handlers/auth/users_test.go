@@ -1,4 +1,4 @@
-package handlers_test
+package auth_test
 
 import (
 	"encoding/json"
@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/delroscol98/savings_tracker/backend/handlers"
 	"github.com/delroscol98/savings_tracker/backend/handlers/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/google/uuid"
@@ -26,7 +25,7 @@ func TestCreateUserHandler(t *testing.T) {
 		wantErr    string
 		wantEmail  string
 		setupMock  func(*mockDB)
-		checkUser  func(*testing.T, handlers.User)
+		checkUser  func(*testing.T, auth.User)
 	}{
 		{
 			name:       "valid user",
@@ -34,7 +33,7 @@ func TestCreateUserHandler(t *testing.T) {
 			wantStatus: http.StatusCreated,
 			wantEmail:  "test@example.com",
 			setupMock:  func(md *mockDB) {},
-			checkUser: func(t *testing.T, u handlers.User) {
+			checkUser: func(t *testing.T, u auth.User) {
 				if u.Id == uuid.Nil {
 					t.Error("user ID should not be zero-value")
 				}
@@ -125,7 +124,7 @@ func TestCreateUserHandler(t *testing.T) {
 			md := &mockDB{users: make(map[string]database.User)}
 			tt.setupMock(md)
 
-			api := handlers.ApiConfig{DatabaseQueries: md}
+			api := auth.AuthConfig{Queries: md}
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest(http.MethodPost, "/api/users", tt.body)
 			r.Header.Set("Content-Type", "application/json")
@@ -146,7 +145,7 @@ func TestCreateUserHandler(t *testing.T) {
 			}
 
 			if tt.checkUser != nil {
-				var user handlers.User
+				var user auth.User
 				if err := json.NewDecoder(w.Body).Decode(&user); err != nil {
 					t.Fatalf("failed to decode user: %v", err)
 				}
@@ -244,7 +243,7 @@ func TestLoginHandler(t *testing.T) {
 				md := &mockDB{users: make(map[string]database.User)}
 				tt.setupMock(md)
 
-				api := handlers.ApiConfig{DatabaseQueries: md}
+				api := auth.AuthConfig{Queries: md}
 				w := httptest.NewRecorder()
 				r := httptest.NewRequest(http.MethodPost, "/api/login", tt.body)
 				r.Header.Set("Content-Type", "application/json")

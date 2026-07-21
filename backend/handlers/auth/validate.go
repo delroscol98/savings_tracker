@@ -1,11 +1,10 @@
-package handlers
+package auth
 
 import (
 	"net/mail"
 	"strings"
 	"unicode/utf8"
 
-	"github.com/delroscol98/savings_tracker/backend/handlers/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
 )
 
@@ -44,7 +43,7 @@ func ValidatePassword(password string, fieldsErrors response.FieldErrors) respon
 		fieldsErrors["password"] = append(fieldsErrors["password"], "Password must be less than 128 characters in length")
 	}
 
-	if auth.IsCommonPassword(password) {
+	if IsCommonPassword(password) {
 		fieldsErrors["password"] = append(fieldsErrors["password"], "Password is too common")
 	}
 

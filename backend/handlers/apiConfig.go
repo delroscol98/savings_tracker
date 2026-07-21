@@ -2,16 +2,12 @@ package handlers
 
 import (
 	"context"
-	"database/sql"
-	"sync/atomic"
 
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
-	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
 	"github.com/google/uuid"
 )
 
-type Database interface {
-	Ping(ctx context.Context) (int32, error)
+type Queries interface {
 	CreateUser(ctx context.Context, params database.CreateUserParams) (database.User, error)
 	GetUserByEmail(ctx context.Context, email string) (database.GetUserByEmailRow, error)
 	Login(ctx context.Context, email string) (database.User, error)
@@ -24,12 +20,4 @@ type Database interface {
 
 type EmailSender interface {
 	Send(to, subject, html string) error
-}
-
-type ApiConfig struct {
-	FileserverHits  atomic.Int32
-	DatabaseQueries Database
-	Db              *sql.DB
-	RateLimiter     *ratelimit.RateLimiter
-	EmailSender     EmailSender
 }

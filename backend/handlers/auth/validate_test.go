@@ -1,9 +1,9 @@
-package handlers_test
+package auth_test
 
 import (
 	"testing"
 
-	"github.com/delroscol98/savings_tracker/backend/handlers"
+	"github.com/delroscol98/savings_tracker/backend/handlers/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
 	"github.com/google/go-cmp/cmp"
 )
@@ -11,12 +11,12 @@ import (
 func TestValidateCreateUserParams(t *testing.T) {
 	tests := []struct {
 		name        string
-		params      handlers.CreateUserParams
+		params      auth.CreateUserParams
 		fieldErrors response.FieldErrors
 	}{
 		{
 			name: "valid params",
-			params: handlers.CreateUserParams{
+			params: auth.CreateUserParams{
 				Email:    "test@example.com",
 				Password: "ThisIsATestPassword",
 				FullName: "John Smith",
@@ -25,7 +25,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "valid params with name and address",
-			params: handlers.CreateUserParams{
+			params: auth.CreateUserParams{
 				Email:    "Test <test@example.com>",
 				Password: "ThisIsATestPassword",
 				FullName: "John Smith",
@@ -34,7 +34,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "empty email",
-			params: handlers.CreateUserParams{
+			params: auth.CreateUserParams{
 				Email:    "",
 				Password: "ThisIsATestPassword",
 				FullName: "John Smith",
@@ -45,7 +45,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "invalid email and common password",
-			params: handlers.CreateUserParams{
+			params: auth.CreateUserParams{
 				Email:    "invalidemail",
 				Password: "ThisIsATestPassword",
 				FullName: "John Smith",
@@ -56,7 +56,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "empty password",
-			params: handlers.CreateUserParams{
+			params: auth.CreateUserParams{
 				Email:    "test@example.com",
 				Password: "",
 				FullName: "John Smith",
@@ -67,7 +67,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "too short password and common password",
-			params: handlers.CreateUserParams{
+			params: auth.CreateUserParams{
 				Email:    "test@example.com",
 				Password: "test",
 				FullName: "John Smith",
@@ -78,7 +78,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "too long password",
-			params: handlers.CreateUserParams{
+			params: auth.CreateUserParams{
 				Email:    "test@example.com",
 				Password: "ThisPasswordIsLongerThan128CharactersSoThatWeCanTestThatOurSystemHandlesItProperlyWithoutAnyIssuesOrUnexpectedBehaviorWhenCreatingAUserWithThisVeryLongPassword1234567890",
 				FullName: "John Smith",
@@ -89,7 +89,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "Empty name",
-			params: handlers.CreateUserParams{
+			params: auth.CreateUserParams{
 				Email:    "test@example.com",
 				Password: "ThisIsATestPassword",
 				FullName: "",
@@ -102,7 +102,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, fieldErrors := handlers.ValidateCreateUserParams(tt.params)
+			_, fieldErrors := auth.ValidateCreateUserParams(tt.params)
 			if !cmp.Equal(fieldErrors, tt.fieldErrors) {
 				t.Errorf("FieldErrors structs do not match:\n%v", cmp.Diff(fieldErrors, tt.fieldErrors))
 			}
@@ -113,12 +113,12 @@ func TestValidateCreateUserParams(t *testing.T) {
 func TestValidateLoginParams(t *testing.T) {
 	tests := []struct {
 		name        string
-		params      handlers.LoginParams
+		params      auth.LoginParams
 		fieldErrors response.FieldErrors
 	}{
 		{
 			name: "valid params",
-			params: handlers.LoginParams{
+			params: auth.LoginParams{
 				Email:    "test@example.com",
 				Password: "ThisIsATestPassword",
 			},
@@ -126,7 +126,7 @@ func TestValidateLoginParams(t *testing.T) {
 		},
 		{
 			name: "empty email",
-			params: handlers.LoginParams{
+			params: auth.LoginParams{
 				Email:    "",
 				Password: "ThisIsATestPassword",
 			},
@@ -136,7 +136,7 @@ func TestValidateLoginParams(t *testing.T) {
 		},
 		{
 			name: "invalid email",
-			params: handlers.LoginParams{
+			params: auth.LoginParams{
 				Email:    "invalidemail",
 				Password: "ThisIsATestPassword",
 			},
@@ -146,7 +146,7 @@ func TestValidateLoginParams(t *testing.T) {
 		},
 		{
 			name: "empty password",
-			params: handlers.LoginParams{
+			params: auth.LoginParams{
 				Email:    "test@example.com",
 				Password: "",
 			},
@@ -158,7 +158,7 @@ func TestValidateLoginParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, fieldErrors := handlers.ValidateLoginParams(tt.params)
+			_, fieldErrors := auth.ValidateLoginParams(tt.params)
 			if !cmp.Equal(fieldErrors, tt.fieldErrors) {
 				t.Errorf("FieldErrors structs do not match:\n%v", cmp.Diff(fieldErrors, tt.fieldErrors))
 			}
