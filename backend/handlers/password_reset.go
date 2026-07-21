@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/delroscol98/savings_tracker/backend/internal/auth"
+	"github.com/delroscol98/savings_tracker/backend/handlers/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
 )
