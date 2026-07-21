@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/delroscol98/savings_tracker/backend/handlers"
-	"github.com/delroscol98/savings_tracker/backend/internal/auth"
+	"github.com/delroscol98/savings_tracker/backend/handlers/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/google/uuid"
 )
