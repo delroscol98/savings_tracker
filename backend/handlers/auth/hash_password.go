@@ -9,7 +9,7 @@ import (
 func HashPassword(password string) (string, error) {
 	passwordHash, err := argon2id.CreateHash(password, argon2id.DefaultParams)
 	if err != nil {
-		return "", errors.New("Error creating password hash")
+		return "", errors.New("error creating password hash")
 	}
 
 	return passwordHash, nil

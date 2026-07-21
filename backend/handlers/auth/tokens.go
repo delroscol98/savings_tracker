@@ -12,7 +12,7 @@ func GenerateResetToken() (string, error) {
 
 	_, err := rand.Read(resetToken)
 	if err != nil {
-		return "", errors.New("Error creating random slice of bytes")
+		return "", errors.New("error creating random slice of bytes")
 	}
 
 	encoded := hex.EncodeToString(resetToken)
