@@ -8,6 +8,7 @@ import (
 
 	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
+	"github.com/delroscol98/savings_tracker/backend/internal/response"
 
 	"github.com/lib/pq"
 )
@@ -18,13 +19,13 @@ func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&params)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Error decoding body")
+		response.RespondWithError(w, http.StatusBadRequest, "Error decoding body")
 		return
 	}
 
 	validatedParams, fieldsErrors := ValidateCreateUserParams(params)
 	if fieldsErrors != nil {
-		respondWithValidationError(w, http.StatusBadRequest, ValidationErrorBody{
+		response.RespondWithValidationError(w, http.StatusBadRequest, response.ValidationErrorBody{
 			Error:  "Invalid parameters to create new user",
 			Fields: fieldsErrors,
 		})
@@ -33,7 +34,7 @@ func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	hashedPW, err := auth.HashPassword(validatedParams.Password)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		response.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -45,14 +46,14 @@ func (a *ApiConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		// PostgreSQL's unique violation code is 23505
 		var pqe *pq.Error
 		if errors.As(err, &pqe) && pqe.Code == "23505" {
-			respondWithError(w, http.StatusConflict, "Email already exists")
+			response.RespondWithError(w, http.StatusConflict, "Email already exists")
 			return
 		}
-		respondWithError(w, http.StatusBadRequest, "Error creating user")
+		response.RespondWithError(w, http.StatusBadRequest, "Error creating user")
 		return
 	}
 
-	respondWithJSON(
+	response.RespondWithJSON(
 		w, http.StatusCreated, User{
 			Id:             user.ID,
 			CreatedAt:      user.CreatedAt,
@@ -67,13 +68,13 @@ func (a *ApiConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	params := LoginParams{}
 
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Error decoding body")
+		response.RespondWithError(w, http.StatusBadRequest, "Error decoding body")
 		return
 	}
 
 	validatedParams, fieldsErrors := ValidateLoginParams(params)
 	if fieldsErrors != nil {
-		respondWithValidationError(w, http.StatusBadRequest, ValidationErrorBody{
+		response.RespondWithValidationError(w, http.StatusBadRequest, response.ValidationErrorBody{
 			Error:  "Incorrect email or password",
 			Fields: fieldsErrors,
 		})
@@ -83,20 +84,20 @@ func (a *ApiConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := a.DatabaseQueries.Login(r.Context(), validatedParams.Email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			respondWithError(w, http.StatusBadRequest, "User not found")
+			response.RespondWithError(w, http.StatusBadRequest, "User not found")
 			return
 		}
-		respondWithError(w, http.StatusInternalServerError, "Unexpected database failure")
+		response.RespondWithError(w, http.StatusInternalServerError, "Unexpected database failure")
 		return
 	}
 
 	match, _ := auth.CheckPasswordHash(params.Password, user.HashedPassword)
 	if !match {
-		respondWithError(w, http.StatusForbidden, "Incorrect email or password")
+		response.RespondWithError(w, http.StatusForbidden, "Incorrect email or password")
 		return
 	}
 
-	respondWithJSON(
+	response.RespondWithJSON(
 		w, http.StatusOK, User{
 			Id:        user.ID,
 			CreatedAt: user.CreatedAt,

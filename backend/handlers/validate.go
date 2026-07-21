@@ -6,6 +6,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/delroscol98/savings_tracker/backend/internal/auth"
+	"github.com/delroscol98/savings_tracker/backend/internal/response"
 )
 
 const (
@@ -13,7 +14,7 @@ const (
 	MAX_PASSWORD_LENGTH = 128
 )
 
-func ValidateEmail(email string, fieldsErrors FieldErrors) (string, FieldErrors) {
+func ValidateEmail(email string, fieldsErrors response.FieldErrors) (string, response.FieldErrors) {
 	// Email validation
 	if email == "" {
 		fieldsErrors["email"] = append(fieldsErrors["email"], "Email cannot be empty")
@@ -29,7 +30,7 @@ func ValidateEmail(email string, fieldsErrors FieldErrors) (string, FieldErrors)
 	return email, fieldsErrors
 }
 
-func ValidatePassword(password string, fieldsErrors FieldErrors) FieldErrors {
+func ValidatePassword(password string, fieldsErrors response.FieldErrors) response.FieldErrors {
 	// Password validation
 	if password == "" {
 		fieldsErrors["password"] = append(fieldsErrors["password"], "Password cannot be empty")
@@ -50,7 +51,7 @@ func ValidatePassword(password string, fieldsErrors FieldErrors) FieldErrors {
 	return fieldsErrors
 }
 
-func ValidateFullName(fullname string, fieldsErrors FieldErrors) FieldErrors {
+func ValidateFullName(fullname string, fieldsErrors response.FieldErrors) response.FieldErrors {
 	// Full name validation
 	if fullname == "" {
 		fieldsErrors["full_name"] = append(fieldsErrors["full_name"], "Full name cannot be empty")
@@ -59,9 +60,9 @@ func ValidateFullName(fullname string, fieldsErrors FieldErrors) FieldErrors {
 	return fieldsErrors
 }
 
-func ValidateCreateUserParams(params CreateUserParams) (CreateUserParams, FieldErrors) {
+func ValidateCreateUserParams(params CreateUserParams) (CreateUserParams, response.FieldErrors) {
 	originalParams := params
-	fieldsErrors := make(FieldErrors)
+	fieldsErrors := make(response.FieldErrors)
 
 	// Email validation
 	params.Email = strings.ToLower(strings.TrimSpace(params.Email))
@@ -83,9 +84,9 @@ func ValidateCreateUserParams(params CreateUserParams) (CreateUserParams, FieldE
 	}
 }
 
-func ValidateLoginParams(params LoginParams) (LoginParams, FieldErrors) {
+func ValidateLoginParams(params LoginParams) (LoginParams, response.FieldErrors) {
 	originalParams := params
-	fieldsErrors := make(FieldErrors)
+	fieldsErrors := make(response.FieldErrors)
 
 	// Email validation
 	params.Email = strings.ToLower(strings.TrimSpace(params.Email))
@@ -105,9 +106,9 @@ func ValidateLoginParams(params LoginParams) (LoginParams, FieldErrors) {
 	}
 }
 
-func ValidateResetResetPasswordParams(params ResetPasswordParams) (ResetPasswordParams, FieldErrors) {
+func ValidateResetResetPasswordParams(params ResetPasswordParams) (ResetPasswordParams, response.FieldErrors) {
 	originalParams := params
-	fieldsErrors := make(FieldErrors)
+	fieldsErrors := make(response.FieldErrors)
 
 	// Password validation
 	params.Password = strings.TrimSpace(params.Password)
