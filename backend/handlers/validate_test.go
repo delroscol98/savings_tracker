@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/delroscol98/savings_tracker/backend/handlers"
+	"github.com/delroscol98/savings_tracker/backend/internal/response"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -11,7 +12,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 	tests := []struct {
 		name        string
 		params      handlers.CreateUserParams
-		fieldErrors handlers.FieldErrors
+		fieldErrors response.FieldErrors
 	}{
 		{
 			name: "valid params",
@@ -38,7 +39,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 				Password: "ThisIsATestPassword",
 				FullName: "John Smith",
 			},
-			fieldErrors: handlers.FieldErrors{
+			fieldErrors: response.FieldErrors{
 				"email": []string{"Email cannot be empty", "Invalid email"},
 			},
 		},
@@ -49,7 +50,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 				Password: "ThisIsATestPassword",
 				FullName: "John Smith",
 			},
-			fieldErrors: handlers.FieldErrors{
+			fieldErrors: response.FieldErrors{
 				"email": []string{"Invalid email"},
 			},
 		},
@@ -60,7 +61,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 				Password: "",
 				FullName: "John Smith",
 			},
-			fieldErrors: handlers.FieldErrors{
+			fieldErrors: response.FieldErrors{
 				"password": []string{"Password cannot be empty", "Password must be at least 8 characters", "Password is too common"},
 			},
 		},
@@ -71,7 +72,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 				Password: "test",
 				FullName: "John Smith",
 			},
-			fieldErrors: handlers.FieldErrors{
+			fieldErrors: response.FieldErrors{
 				"password": []string{"Password must be at least 8 characters", "Password is too common"},
 			},
 		},
@@ -82,7 +83,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 				Password: "ThisPasswordIsLongerThan128CharactersSoThatWeCanTestThatOurSystemHandlesItProperlyWithoutAnyIssuesOrUnexpectedBehaviorWhenCreatingAUserWithThisVeryLongPassword1234567890",
 				FullName: "John Smith",
 			},
-			fieldErrors: handlers.FieldErrors{
+			fieldErrors: response.FieldErrors{
 				"password": []string{"Password must be less than 128 characters in length"},
 			},
 		},
@@ -93,7 +94,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 				Password: "ThisIsATestPassword",
 				FullName: "",
 			},
-			fieldErrors: handlers.FieldErrors{
+			fieldErrors: response.FieldErrors{
 				"full_name": []string{"Full name cannot be empty"},
 			},
 		},
@@ -113,7 +114,7 @@ func TestValidateLoginParams(t *testing.T) {
 	tests := []struct {
 		name        string
 		params      handlers.LoginParams
-		fieldErrors handlers.FieldErrors
+		fieldErrors response.FieldErrors
 	}{
 		{
 			name: "valid params",
@@ -129,7 +130,7 @@ func TestValidateLoginParams(t *testing.T) {
 				Email:    "",
 				Password: "ThisIsATestPassword",
 			},
-			fieldErrors: handlers.FieldErrors{
+			fieldErrors: response.FieldErrors{
 				"email": []string{"Email cannot be empty", "Invalid email"},
 			},
 		},
@@ -139,7 +140,7 @@ func TestValidateLoginParams(t *testing.T) {
 				Email:    "invalidemail",
 				Password: "ThisIsATestPassword",
 			},
-			fieldErrors: handlers.FieldErrors{
+			fieldErrors: response.FieldErrors{
 				"email": []string{"Invalid email"},
 			},
 		},
@@ -149,7 +150,7 @@ func TestValidateLoginParams(t *testing.T) {
 				Email:    "test@example.com",
 				Password: "",
 			},
-			fieldErrors: handlers.FieldErrors{
+			fieldErrors: response.FieldErrors{
 				"password": []string{"Password cannot be empty"},
 			},
 		},

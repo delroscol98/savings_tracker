@@ -11,6 +11,7 @@ import (
 
 	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
+	"github.com/delroscol98/savings_tracker/backend/internal/response"
 )
 
 func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.Request) {
@@ -18,16 +19,16 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&body)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Error decoding body")
+		response.RespondWithError(w, http.StatusBadRequest, "Error decoding body")
 		return
 	}
 
 	// Email validation
-	fieldsErrors := make(FieldErrors)
+	fieldsErrors := make(response.FieldErrors)
 	body.Email = strings.ToLower(strings.TrimSpace(body.Email))
 	body.Email, fieldsErrors = ValidateEmail(body.Email, fieldsErrors)
 	if len(fieldsErrors) != 0 {
-		respondWithValidationError(w, http.StatusBadRequest, ValidationErrorBody{
+		response.RespondWithValidationError(w, http.StatusBadRequest, response.ValidationErrorBody{
 			Error:  "Invalid parameters to reset password",
 			Fields: fieldsErrors,
 		})
@@ -42,14 +43,14 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 
 	allowed := a.RateLimiter.Allow(ip)
 	if !allowed {
-		respondWithError(w, http.StatusTooManyRequests, "Exceeded password reset limit")
+		response.RespondWithError(w, http.StatusTooManyRequests, "Exceeded password reset limit")
 		return
 	}
 
 	user, err := a.DatabaseQueries.GetUserByEmail(r.Context(), body.Email)
 	if err != nil {
 		log.Print("User not found")
-		respondWithJSON(w, http.StatusOK, struct {
+		response.RespondWithJSON(w, http.StatusOK, struct {
 			Message string `json:"message"`
 		}{
 			Message: "If the email exists, a reset link has been sent",
@@ -61,7 +62,7 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 	tx, err := a.Db.BeginTx(r.Context(), nil)
 	if err != nil {
 		errMsg := fmt.Sprintf("Error creating db transaction: %s", err)
-		respondWithError(w, http.StatusInternalServerError, errMsg)
+		response.RespondWithError(w, http.StatusInternalServerError, errMsg)
 		return
 	}
 	defer tx.Rollback()
@@ -70,13 +71,13 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 
 	err = qtx.DeactivateUserTokens(r.Context(), user.ID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Error deactivating user tokens")
+		response.RespondWithError(w, http.StatusInternalServerError, "Error deactivating user tokens")
 		return
 	}
 
 	token, err := auth.GenerateResetToken()
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		response.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	tokenHash := auth.HashToken(token)
@@ -86,7 +87,7 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 		TokenHash: tokenHash,
 	})
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Error storing password reset token")
+		response.RespondWithError(w, http.StatusInternalServerError, "Error storing password reset token")
 		return
 	}
 
@@ -94,7 +95,7 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 	err = tx.Commit()
 	if err != nil {
 		errMsg := fmt.Sprintf("Error committing transaction: %s", err)
-		respondWithError(w, http.StatusInternalServerError, errMsg)
+		response.RespondWithError(w, http.StatusInternalServerError, errMsg)
 		return
 	}
 
@@ -104,11 +105,11 @@ func (a *ApiConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.R
 	<p>Click the following <a href="%v">link</a> to reset your password.</p>
 	`, link))
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Error sending reset password link")
+		response.RespondWithError(w, http.StatusInternalServerError, "Error sending reset password link")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, struct {
+	response.RespondWithJSON(w, http.StatusOK, struct {
 		Message string `json:"message"`
 	}{
 		Message: "If the email exists, a reset link has been sent",
@@ -120,13 +121,13 @@ func (a *ApiConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request)
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&body)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Error decoding body")
+		response.RespondWithError(w, http.StatusBadRequest, "Error decoding body")
 		return
 	}
 
 	body, fieldsErrors := ValidateResetResetPasswordParams(body)
 	if fieldsErrors != nil {
-		respondWithValidationError(w, http.StatusBadRequest, ValidationErrorBody{
+		response.RespondWithValidationError(w, http.StatusBadRequest, response.ValidationErrorBody{
 			Error:  "Invalid parameters to reset password",
 			Fields: fieldsErrors,
 		})
@@ -137,18 +138,18 @@ func (a *ApiConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request)
 
 	passwordResetToken, err := a.DatabaseQueries.GetPasswordResetTokenByHash(r.Context(), hashToken)
 	if err != nil || time.Now().After(passwordResetToken.ExpiresAt) {
-		respondWithError(w, http.StatusBadRequest, "Invalid or expired token")
+		response.RespondWithError(w, http.StatusBadRequest, "Invalid or expired token")
 		return
 	}
 
 	if passwordResetToken.ConsumedAt.Valid && time.Now().After(passwordResetToken.ConsumedAt.Time) {
-		respondWithError(w, http.StatusBadRequest, "Invalid or expired token")
+		response.RespondWithError(w, http.StatusBadRequest, "Invalid or expired token")
 		return
 	}
 
 	pwHash, err := auth.HashPassword(body.Password)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		response.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -156,7 +157,7 @@ func (a *ApiConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request)
 	tx, err := a.Db.BeginTx(r.Context(), nil)
 	if err != nil {
 		errMsg := fmt.Sprintf("Error creating db transaction: %s", err)
-		respondWithError(w, http.StatusInternalServerError, errMsg)
+		response.RespondWithError(w, http.StatusInternalServerError, errMsg)
 		return
 	}
 	defer tx.Rollback()
@@ -168,13 +169,13 @@ func (a *ApiConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request)
 		HashedPassword: pwHash,
 	})
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Error updating password")
+		response.RespondWithError(w, http.StatusBadRequest, "Error updating password")
 		return
 	}
 
 	err = qtx.ConsumePasswordResetToken(r.Context(), passwordResetToken.ID)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Error consuming password reset token")
+		response.RespondWithError(w, http.StatusBadRequest, "Error consuming password reset token")
 		return
 	}
 
@@ -182,11 +183,11 @@ func (a *ApiConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request)
 	err = tx.Commit()
 	if err != nil {
 		errMsg := fmt.Sprintf("Error committing transaction: %s", err)
-		respondWithError(w, http.StatusInternalServerError, errMsg)
+		response.RespondWithError(w, http.StatusInternalServerError, errMsg)
 		return
 	}
 
-	respondWithJSON(
+	response.RespondWithJSON(
 		w, http.StatusOK, struct {
 			Message string `json:"message"`
 		}{

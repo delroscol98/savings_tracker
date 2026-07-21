@@ -3,14 +3,16 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/delroscol98/savings_tracker/backend/internal/response"
 )
 
 func (a *ApiConfig) CheckHealthHandler(w http.ResponseWriter, r *http.Request) {
 	int, err := a.DatabaseQueries.Ping(r.Context())
 	if err != nil {
-		respondWithError(w, http.StatusServiceUnavailable, fmt.Sprintf("Error pinging database: %v", err))
+		response.RespondWithError(w, http.StatusServiceUnavailable, fmt.Sprintf("Error pinging database: %v", err))
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, int)
+	response.RespondWithJSON(w, http.StatusOK, int)
 }
