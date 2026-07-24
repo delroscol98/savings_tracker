@@ -96,12 +96,19 @@ func (a *AuthConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token, err := MakeJWT(user.ID, a.JWTSecret, params.ExpiresInSeconds)
+	if err != nil {
+		response.RespondWithError(w, http.StatusInternalServerError, "Error creating JWT token")
+		return
+	}
+
 	response.RespondWithJSON(
 		w, http.StatusOK, User{
 			Id:        user.ID,
 			CreatedAt: user.CreatedAt,
 			UpdatedAt: user.UpdatedAt,
 			Email:     user.Email,
+			Token:     token,
 		},
 	)
 }

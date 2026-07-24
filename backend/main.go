@@ -49,12 +49,16 @@ func main() {
 		From:   fromEmail,
 	}
 
+	// JWT
+	secret := os.Getenv("JWT_SECRET")
+
 	// API setup
 	authApi := &auth.AuthConfig{
 		Queries:     dbQueries,
 		RateLimiter: ratelimit.New(5, 15*time.Minute),
 		Database:    db,
 		EmailSender: &resendSender,
+		JWTSecret:   secret,
 	}
 	healthApi := &health.HealthConfig{
 		Queries: dbQueries,

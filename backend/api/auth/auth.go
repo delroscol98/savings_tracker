@@ -30,6 +30,7 @@ type AuthConfig struct {
 	Database    *sql.DB
 	RateLimiter *ratelimit.RateLimiter
 	EmailSender EmailSender
+	JWTSecret   string
 }
 
 type ResendSender struct {

@@ -3,6 +3,7 @@ package auth
 import (
 	"net/mail"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
@@ -95,6 +96,12 @@ func ValidateLoginParams(params LoginParams) (LoginParams, response.FieldErrors)
 	params.Password = strings.TrimSpace(params.Password)
 	if params.Password == "" {
 		fieldsErrors["password"] = append(fieldsErrors["password"], "Password cannot be empty")
+	}
+
+	// JWT Duration
+	defaultExpirationTime := time.Hour * 3600
+	if params.ExpiresInSeconds == 0 {
+		params.ExpiresInSeconds = defaultExpirationTime
 	}
 
 	// Check for any error messages

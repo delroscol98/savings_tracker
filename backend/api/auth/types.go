@@ -12,6 +12,7 @@ type User struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 	Email          string    `json:"email"`
 	HashedPassword string    `json:"hashed_password"`
+	Token          string    `json:"token"`
 }
 
 type CreateUserParams struct {
@@ -21,8 +22,9 @@ type CreateUserParams struct {
 }
 
 type LoginParams struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email            string        `json:"email"`
+	Password         string        `json:"password"`
+	ExpiresInSeconds time.Duration `json:"expires_in_seconds"`
 }
 
 type requestPasswordResetbody struct {
