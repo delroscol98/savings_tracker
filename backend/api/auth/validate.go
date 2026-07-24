@@ -127,3 +127,25 @@ func ValidateResetPasswordParams(params ResetPasswordParams) (ResetPasswordParam
 		return originalParams, fieldsErrors
 	}
 }
+
+func ValidateCreateGoalParams(params CreateGoalParams) (CreateGoalParams, response.FieldErrors) {
+	originalParams := params
+	fieldsErrors := make(response.FieldErrors)
+
+	// Target Validation
+	if params.Target < 0 {
+		fieldsErrors["target"] = append(fieldsErrors["target"], "Goal target cannot be negative")
+	}
+
+	// Deadline Validation
+	if time.Now().After(params.Deadline) {
+		fieldsErrors["deadline"] = append(fieldsErrors["deadline"], "Deadline cannot be in the past")
+	}
+
+	// Check for any error messages
+	if len(fieldsErrors) == 0 {
+		return params, nil
+	} else {
+		return originalParams, fieldsErrors
+	}
+}

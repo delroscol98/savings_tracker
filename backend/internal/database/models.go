@@ -11,6 +11,24 @@ import (
 	"github.com/google/uuid"
 )
 
+type Deposit struct {
+	ID        uuid.UUID
+	Amount    int32
+	Note      sql.NullString
+	CreatedAt time.Time
+	GoalID    uuid.UUID
+	UserID    uuid.UUID
+}
+
+type Goal struct {
+	ID        uuid.UUID
+	Target    int32
+	Deadline  time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	UserID    uuid.UUID
+}
+
 type PasswordResetToken struct {
 	ID         uuid.UUID
 	UserID     uuid.UUID

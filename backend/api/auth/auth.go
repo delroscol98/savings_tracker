@@ -19,6 +19,7 @@ type Queries interface {
 	ConsumePasswordResetToken(ctx context.Context, id uuid.UUID) error
 	DeactivateUserTokens(ctx context.Context, userID uuid.UUID) error
 	UpdateUserPassword(ctx context.Context, params database.UpdateUserPasswordParams) error
+	CreateGoal(ctx context.Context, arg database.CreateGoalParams) (database.Goal, error)
 }
 
 type EmailSender interface {
