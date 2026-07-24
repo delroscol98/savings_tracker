@@ -2,6 +2,7 @@ package auth_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/delroscol98/savings_tracker/backend/api/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
@@ -159,6 +160,52 @@ func TestValidateLoginParams(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, fieldErrors := auth.ValidateLoginParams(tt.params)
+			if !cmp.Equal(fieldErrors, tt.fieldErrors) {
+				t.Errorf("FieldErrors structs do not match:\n%v", cmp.Diff(fieldErrors, tt.fieldErrors))
+			}
+		})
+	}
+}
+
+func TestValidateCreateGoalParams(t *testing.T) {
+	tests := []struct {
+		name        string
+		params      auth.CreateGoalParams
+		fieldErrors response.FieldErrors
+	}{
+		{
+			name: "Valid Params",
+			params: auth.CreateGoalParams{
+				Target:   1000,
+				Deadline: time.Now().Add(time.Hour),
+			},
+			fieldErrors: nil,
+		},
+		{
+			name: "Invalid target",
+			params: auth.CreateGoalParams{
+				Target:   -1000,
+				Deadline: time.Now().Add(time.Hour),
+			},
+			fieldErrors: response.FieldErrors{
+				"target": []string{"Goal target cannot be negative"},
+			},
+		},
+		{
+			name: "Invalid deadline",
+			params: auth.CreateGoalParams{
+				Target:   1000,
+				Deadline: time.Date(2000, time.January, 0, 0, 0, 0, 0, time.UTC),
+			},
+			fieldErrors: response.FieldErrors{
+				"deadline": []string{"Deadline cannot be in the past"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, fieldErrors := auth.ValidateCreateGoalParams(tt.params)
 			if !cmp.Equal(fieldErrors, tt.fieldErrors) {
 				t.Errorf("FieldErrors structs do not match:\n%v", cmp.Diff(fieldErrors, tt.fieldErrors))
 			}
