@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/delroscol98/savings_tracker/backend/handlers/auth"
+	"github.com/delroscol98/savings_tracker/backend/api/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/google/uuid"
 	"github.com/lib/pq"

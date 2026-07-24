@@ -105,7 +105,7 @@ func ValidateLoginParams(params LoginParams) (LoginParams, response.FieldErrors)
 	}
 }
 
-func ValidateResetResetPasswordParams(params ResetPasswordParams) (ResetPasswordParams, response.FieldErrors) {
+func ValidateResetPasswordParams(params ResetPasswordParams) (ResetPasswordParams, response.FieldErrors) {
 	originalParams := params
 	fieldsErrors := make(response.FieldErrors)
 

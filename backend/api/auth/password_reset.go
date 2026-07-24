@@ -124,7 +124,7 @@ func (a *AuthConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	body, fieldsErrors := ValidateResetResetPasswordParams(body)
+	body, fieldsErrors := ValidateResetPasswordParams(body)
 	if fieldsErrors != nil {
 		response.RespondWithValidationError(w, http.StatusBadRequest, response.ValidationErrorBody{
 			Error:  "Invalid parameters to reset password",

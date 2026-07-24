@@ -1,10 +1,13 @@
-package handlers
+package auth
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
+	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
 	"github.com/google/uuid"
+	"github.com/resend/resend-go/v3"
 )
 
 type Queries interface {
@@ -20,4 +23,28 @@ type Queries interface {
 
 type EmailSender interface {
 	Send(to, subject, html string) error
+}
+
+type AuthConfig struct {
+	Queries     Queries
+	Database    *sql.DB
+	RateLimiter *ratelimit.RateLimiter
+	EmailSender EmailSender
+}
+
+type ResendSender struct {
+	Client *resend.Client
+	From   string
+}
+
+func (rs *ResendSender) Send(to, subject, html string) error {
+	params := &resend.SendEmailRequest{
+		From:    rs.From,
+		To:      []string{to},
+		Subject: subject,
+		Html:    html,
+	}
+
+	_, err := rs.Client.Emails.Send(params)
+	return err
 }

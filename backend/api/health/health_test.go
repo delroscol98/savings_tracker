@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/delroscol98/savings_tracker/backend/handlers/health"
+	"github.com/delroscol98/savings_tracker/backend/api/health"
 )
 
 type mockHealthDB struct {

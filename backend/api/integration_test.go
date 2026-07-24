@@ -1,4 +1,4 @@
-package handlers_test
+package api_test
 
 import (
 	"bytes"
@@ -17,8 +17,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/delroscol98/savings_tracker/backend/handlers/auth"
-	"github.com/delroscol98/savings_tracker/backend/handlers/health"
+	"github.com/delroscol98/savings_tracker/backend/api/auth"
+	"github.com/delroscol98/savings_tracker/backend/api/health"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/delroscol98/savings_tracker/backend/internal/middleware"
 	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"

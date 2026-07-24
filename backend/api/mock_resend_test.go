@@ -1,4 +1,4 @@
-package handlers_test
+package api_test
 
 type EmailRecord struct {
 	To      string

@@ -11,9 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/delroscol98/savings_tracker/backend/handlers"
-	"github.com/delroscol98/savings_tracker/backend/handlers/auth"
-	"github.com/delroscol98/savings_tracker/backend/handlers/health"
+	"github.com/delroscol98/savings_tracker/backend/api/auth"
+	"github.com/delroscol98/savings_tracker/backend/api/health"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/delroscol98/savings_tracker/backend/internal/middleware"
 	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
@@ -45,7 +44,7 @@ func main() {
 	// Resend
 	resendApiKey := os.Getenv("RESEND_API_KEY")
 	fromEmail := os.Getenv("FROM_EMAIL")
-	resendSender := handlers.ResendSender{
+	resendSender := auth.ResendSender{
 		Client: resend.NewClient(resendApiKey),
 		From:   fromEmail,
 	}
