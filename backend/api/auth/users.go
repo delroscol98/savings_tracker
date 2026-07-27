@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
@@ -18,12 +19,14 @@ func (a *AuthConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&params)
 	if err != nil {
+		log.Print(err)
 		response.RespondWithError(w, http.StatusBadRequest, "Error decoding body")
 		return
 	}
 
 	validatedParams, fieldsErrors := ValidateCreateUserParams(params)
 	if fieldsErrors != nil {
+		log.Print(fieldsErrors)
 		response.RespondWithValidationError(w, http.StatusBadRequest, response.ValidationErrorBody{
 			Error:  "Invalid parameters to create new user",
 			Fields: fieldsErrors,
@@ -33,6 +36,7 @@ func (a *AuthConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	hashedPW, err := HashPassword(validatedParams.Password)
 	if err != nil {
+		log.Print(err)
 		response.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -45,9 +49,11 @@ func (a *AuthConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		// PostgreSQL's unique violation code is 23505
 		var pqe *pq.Error
 		if errors.As(err, &pqe) && pqe.Code == "23505" {
+			log.Print(err)
 			response.RespondWithError(w, http.StatusConflict, "Email already exists")
 			return
 		}
+		log.Print(err)
 		response.RespondWithError(w, http.StatusBadRequest, "Error creating user")
 		return
 	}
@@ -67,12 +73,14 @@ func (a *AuthConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	params := LoginParams{}
 
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		log.Print(err)
 		response.RespondWithError(w, http.StatusBadRequest, "Error decoding body")
 		return
 	}
 
 	validatedParams, fieldsErrors := ValidateLoginParams(params)
 	if fieldsErrors != nil {
+		log.Print(fieldsErrors)
 		response.RespondWithValidationError(w, http.StatusBadRequest, response.ValidationErrorBody{
 			Error:  "Incorrect email or password",
 			Fields: fieldsErrors,
@@ -83,9 +91,11 @@ func (a *AuthConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := a.Queries.Login(r.Context(), validatedParams.Email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			log.Print(err)
 			response.RespondWithError(w, http.StatusBadRequest, "User not found")
 			return
 		}
+		log.Print(err)
 		response.RespondWithError(w, http.StatusInternalServerError, "Unexpected database failure")
 		return
 	}
@@ -98,6 +108,7 @@ func (a *AuthConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	token, err := MakeJWT(user.ID, a.JWTSecret, params.ExpiresInSeconds)
 	if err != nil {
+		log.Print(err)
 		response.RespondWithError(w, http.StatusInternalServerError, "Error creating JWT token")
 		return
 	}

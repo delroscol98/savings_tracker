@@ -13,12 +13,14 @@ func (a *AuthConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) {
 	// JWT validation
 	token, err := GetBearerToken(r.Header)
 	if err != nil {
+		log.Print(err)
 		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
 	userId, err := ValidateJWT(token, a.JWTSecret)
 	if err != nil {
+		log.Print(err)
 		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
@@ -29,6 +31,7 @@ func (a *AuthConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err = decoder.Decode(&params)
 	if err != nil {
+		log.Print(err)
 		response.RespondWithError(w, http.StatusBadRequest, "Error decoding body")
 		return
 	}
@@ -40,6 +43,7 @@ func (a *AuthConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) {
 
 	params, fieldErrors := ValidateCreateGoalParams(params)
 	if fieldErrors != nil {
+		log.Print(fieldErrors)
 		response.RespondWithValidationError(w, http.StatusBadRequest, response.ValidationErrorBody{
 			Error:  "Invalid parameters to create new goal",
 			Fields: fieldErrors,

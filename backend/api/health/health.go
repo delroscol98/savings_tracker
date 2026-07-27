@@ -3,6 +3,7 @@ package health
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
@@ -19,6 +20,7 @@ type HealthConfig struct {
 func (h *HealthConfig) CheckHealthHandler(w http.ResponseWriter, r *http.Request) {
 	int, err := h.Queries.Ping(r.Context())
 	if err != nil {
+		log.Print(err)
 		response.RespondWithError(w, http.StatusServiceUnavailable, fmt.Sprintf("Error pinging database: %v", err))
 		return
 	}
