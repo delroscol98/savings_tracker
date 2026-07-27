@@ -22,8 +22,10 @@ type mockDB struct {
 	ConsumePasswordResetTokenErr   error
 	DeactivateUserTokensErr        error
 	UpdateUserPasswordErr          error
+	CreateGoalErr                  error
 	users                          map[string]database.User
 	PasswordResetTokens            map[string]database.PasswordResetToken
+	Goals                          map[string]database.Goal
 }
 
 func (m *mockDB) CreateUser(ctx context.Context, params database.CreateUserParams) (database.User, error) {
@@ -187,4 +189,27 @@ func (m *mockDB) UpdateUserPassword(ctx context.Context, params database.UpdateU
 	}
 
 	return errors.New("User not found")
+}
+
+func (m *mockDB) CreateGoal(ctx context.Context, params database.CreateGoalParams) (database.Goal, error) {
+	if m.CreateUserErr != nil {
+		return database.Goal{}, m.CreateGoalErr
+	}
+
+	if m.Goals == nil {
+		m.Goals = make(map[string]database.Goal)
+	}
+
+	goalId := uuid.New()
+	goal := database.Goal{
+		ID:        goalId,
+		Target:    params.Target,
+		Deadline:  params.Deadline,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    params.UserID,
+	}
+	m.Goals[goalId.String()] = goal
+
+	return goal, nil
 }

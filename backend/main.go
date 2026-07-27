@@ -72,6 +72,7 @@ func main() {
 	serveMux.Handle("POST /api/login", middleware.Log(http.HandlerFunc(authApi.LoginUserHandler)))
 	serveMux.Handle("POST /api/forgot-password", middleware.Log(http.HandlerFunc(authApi.RequestPasswordResetHandler)))
 	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(authApi.ResetPasswordHandler)))
+	serveMux.Handle("POST /api/goals", middleware.Log(http.HandlerFunc(authApi.CreateGoalHandler)))
 
 	// START THE SERVER
 	server := http.Server{
