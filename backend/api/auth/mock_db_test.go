@@ -192,7 +192,7 @@ func (m *mockDB) UpdateUserPassword(ctx context.Context, params database.UpdateU
 }
 
 func (m *mockDB) CreateGoal(ctx context.Context, params database.CreateGoalParams) (database.Goal, error) {
-	if m.CreateUserErr != nil {
+	if m.CreateGoalErr != nil {
 		return database.Goal{}, m.CreateGoalErr
 	}
 

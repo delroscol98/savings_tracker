@@ -2,6 +2,7 @@ package auth_test
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,25 +25,101 @@ func TestCreateGoalHandler(t *testing.T) {
 	jwt, _ := auth.MakeJWT(userId, tokenSecret, expiresIn)
 
 	tests := []struct {
-		name       string
-		body       io.Reader
-		wantStatus int
-		wantErr    string
-		setupMock  func(*mockDB)
+		name         string
+		body         io.Reader
+		wantStatus   int
+		wantErr      string
+		setupJWT     func(uuid.UUID, string, time.Duration) string
+		setupHeaders func(*http.Request)
+		setupMock    func(*mockDB)
 	}{
 		{
 			name:       "valid goal",
 			body:       strings.NewReader(fmt.Sprintf(`{"target": 1000, "deadline": "%s", "user_id": "%v"}`, time.Now().Add(expiresIn).Format(time.RFC3339), userId)),
 			wantStatus: http.StatusCreated,
 			wantErr:    "",
-			setupMock:  func(md *mockDB) {},
+			setupJWT: func(u uuid.UUID, s string, d time.Duration) string {
+				token, _ := auth.MakeJWT(u, s, d)
+				return token
+			},
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+			setupMock: func(md *mockDB) {},
+		},
+		{
+			name:       "Authorization header not present",
+			body:       strings.NewReader(fmt.Sprintf(`{"target": 1000, "deadline": "%s", "user_id": "%v"}`, time.Now().Add(expiresIn).Format(time.RFC3339), userId)),
+			wantStatus: http.StatusUnauthorized,
+			wantErr:    "authorization header not present",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+			},
+			setupMock: func(md *mockDB) {},
+		},
+		{
+			name:       "Malformed bearer token",
+			body:       strings.NewReader(fmt.Sprintf(`{"target": 1000, "deadline": "%s", "user_id": "%v"}`, time.Now().Add(expiresIn).Format(time.RFC3339), userId)),
+			wantStatus: http.StatusUnauthorized,
+			wantErr:    "Malformed header",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", "Bear ")
+			},
+			setupMock: func(md *mockDB) {},
+		},
+		{
+			name:       "Unable to parse jwt",
+			body:       strings.NewReader(fmt.Sprintf(`{"target": 1000, "deadline": "%s", "user_id": "%v"}`, time.Now().Add(expiresIn).Format(time.RFC3339), userId)),
+			wantStatus: http.StatusUnauthorized,
+			wantErr:    "error parsing jwt token",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", "Bearer ")
+			},
+			setupMock: func(md *mockDB) {},
+		},
+		{
+			name:       "Poorly formatted body",
+			body:       strings.NewReader(fmt.Sprintf(`{target": 1000, "deadline": "%s", "user_id": "%v"}`, time.Now().Add(expiresIn).Format(time.RFC3339), userId)),
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "Error decoding body",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+			setupMock: func(md *mockDB) {},
+		},
+		{
+			name:       "Invalid parameters",
+			body:       strings.NewReader(fmt.Sprintf(`{"target": -1000, "deadline": "%s", "user_id": "%v"}`, time.Now().Add(expiresIn).Format(time.RFC3339), userId)),
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "Invalid parameters to create new goal",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+			setupMock: func(md *mockDB) {},
+		},
+		{
+			name:       "database error",
+			body:       strings.NewReader(fmt.Sprintf(`{"target": 1000, "deadline": "%s", "user_id": "%v"}`, time.Now().Add(expiresIn).Format(time.RFC3339), userId)),
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "Error creating goal",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+			setupMock: func(md *mockDB) {
+				md.CreateGoalErr = errors.New("Goal table error")
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			md := &mockDB{
-				users: make(map[string]database.User),
 				Goals: make(map[string]database.Goal),
 			}
 			tt.setupMock(md)
@@ -51,8 +128,7 @@ func TestCreateGoalHandler(t *testing.T) {
 			api.JWTSecret = tokenSecret
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest(http.MethodPost, "/api/goals", tt.body)
-			r.Header.Set("Content-Type", "application/json")
-			r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			tt.setupHeaders(r)
 			api.CreateGoalHandler(w, r)
 
 			if w.Code != tt.wantStatus {
