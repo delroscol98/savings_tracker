@@ -29,7 +29,6 @@ func TestCreateGoalHandler(t *testing.T) {
 		body         io.Reader
 		wantStatus   int
 		wantErr      string
-		setupJWT     func(uuid.UUID, string, time.Duration) string
 		setupHeaders func(*http.Request)
 		setupMock    func(*mockDB)
 	}{
@@ -38,10 +37,6 @@ func TestCreateGoalHandler(t *testing.T) {
 			body:       strings.NewReader(fmt.Sprintf(`{"target": 1000, "deadline": "%s", "user_id": "%v"}`, time.Now().Add(expiresIn).Format(time.RFC3339), userId)),
 			wantStatus: http.StatusCreated,
 			wantErr:    "",
-			setupJWT: func(u uuid.UUID, s string, d time.Duration) string {
-				token, _ := auth.MakeJWT(u, s, d)
-				return token
-			},
 			setupHeaders: func(r *http.Request) {
 				r.Header.Set("Content-Type", "application/json")
 				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))

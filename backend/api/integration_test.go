@@ -25,6 +25,7 @@ var (
 	dbQueries       *database.Queries
 	testRateLimiter *ratelimit.RateLimiter
 	mockSender      *MockEmailSender
+	JWTSecret       string
 )
 
 func TestMain(m *testing.M) {
@@ -91,15 +92,30 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Error executing up migration: %v", err)
 	}
 
+	migration005, err := os.ReadFile("../sql/schema/005_create_goals_and_deposits.sql")
+	if err != nil {
+		log.Fatalf("Error reading schema: %v", err)
+	}
+	migration005Split := bytes.Split(migration005, []byte("\n-- +goose Down\n"))
+	upMigration005 := migration005Split[0]
+	downMigration005 := migration005Split[1]
+	_, err = db.Exec(string(upMigration005))
+	if err != nil {
+		log.Fatalf("Error executing up migration: %v", err)
+	}
+
 	testRateLimiter = ratelimit.New(5, 15*time.Minute)
 	dbQueries = database.New(db)
 
 	mockSender = &MockEmailSender{}
+
+	JWTSecret = "secret"
 	authApi := &auth.AuthConfig{
 		Queries:     dbQueries,
 		Database:    db,
 		RateLimiter: testRateLimiter,
 		EmailSender: mockSender,
+		JWTSecret:   JWTSecret,
 	}
 	healthApi := &health.HealthConfig{
 		Queries: dbQueries,
@@ -112,10 +128,16 @@ func TestMain(m *testing.M) {
 	serveMux.Handle("POST /api/login", middleware.Log(http.HandlerFunc(authApi.LoginUserHandler)))
 	serveMux.Handle("POST /api/forgot-password", middleware.Log(http.HandlerFunc(authApi.RequestPasswordResetHandler)))
 	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(authApi.ResetPasswordHandler)))
+	serveMux.Handle("POST /api/goals", middleware.Log(http.HandlerFunc(authApi.CreateGoalHandler)))
 
 	testServer = httptest.NewServer(serveMux)
 
 	code := m.Run()
+	_, err = db.Exec(string(downMigration005))
+	if err != nil {
+		log.Fatalf("Error executing down migration: %v", err)
+	}
+
 	_, err = db.Exec(string(downMigration004))
 	if err != nil {
 		log.Fatalf("Error executing down migration: %v", err)

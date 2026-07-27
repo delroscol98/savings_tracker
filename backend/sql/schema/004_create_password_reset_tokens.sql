@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TABLE password_reset_tokens(
+CREATE TABLE IF NOT EXISTS password_reset_tokens(
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
     token_hash TEXT NOT NULL,

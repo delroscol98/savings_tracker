@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
@@ -43,6 +44,7 @@ func (a *AuthConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) {
 			Error:  "Invalid parameters to create new goal",
 			Fields: fieldErrors,
 		})
+		return
 	}
 
 	goal, err := a.Queries.CreateGoal(r.Context(), database.CreateGoalParams{
@@ -51,6 +53,7 @@ func (a *AuthConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) {
 		UserID:   params.UserId,
 	})
 	if err != nil {
+		log.Print(err)
 		response.RespondWithError(w, http.StatusBadRequest, "Error creating goal")
 		return
 	}
