@@ -11,11 +11,13 @@ import (
 
 	"github.com/delroscol98/savings_tracker/backend/api/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
 func TestCreateGoalHandler_Integration(t *testing.T) {
 	expiresIn := time.Hour
+	extraUserId := uuid.New()
 
 	// Seed Database with a single user
 	hashedPw, err := auth.HashPassword("ThisIsATestPassword")
@@ -45,7 +47,7 @@ func TestCreateGoalHandler_Integration(t *testing.T) {
 		{
 			name:       "valid goal",
 			target:     1000,
-			deadline:   time.Now().Add(time.Hour).Format(time.RFC3339),
+			deadline:   time.Now().AddDate(1, 0, 0).Format(time.RFC3339),
 			userId:     user.ID,
 			wantStatus: http.StatusCreated,
 			wantErr:    "",
@@ -65,6 +67,58 @@ func TestCreateGoalHandler_Integration(t *testing.T) {
 				if g.UpdatedAt.IsZero() {
 					t.Error("Goal UpdatedAt timestamp should not be zero-value")
 				}
+			},
+		},
+		{
+			name:       "User ID doesn't exist",
+			target:     1000,
+			deadline:   time.Now().AddDate(1, 0, 0).Format(time.RFC3339),
+			userId:     extraUserId,
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "",
+			setupHeaders: func(r *http.Request) {
+				jwt, _ := auth.MakeJWT(extraUserId, JWTSecret, expiresIn)
+
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+		},
+		{
+			name:       "Expired JWT",
+			target:     1000,
+			deadline:   time.Now().AddDate(1, 0, 0).Format(time.RFC3339),
+			userId:     user.ID,
+			wantStatus: http.StatusUnauthorized,
+			wantErr:    "",
+			setupHeaders: func(r *http.Request) {
+				token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+					Subject:   user.ID.String(),
+					ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
+					IssuedAt:  jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
+				})
+				expiredJWT, _ := token.SignedString([]byte(JWTSecret))
+
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", expiredJWT))
+			},
+		},
+		{
+			name:       "Mismatched user ID",
+			target:     1000,
+			deadline:   time.Now().AddDate(1, 0, 0).Format(time.RFC3339),
+			userId:     user.ID,
+			wantStatus: http.StatusUnauthorized,
+			wantErr:    "",
+			setupHeaders: func(r *http.Request) {
+				token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+					Subject:   extraUserId.String(),
+					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+					IssuedAt:  jwt.NewNumericDate(time.Now()),
+				})
+				expiredJWT, _ := token.SignedString([]byte(JWTSecret))
+
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", expiredJWT))
 			},
 		},
 	}
