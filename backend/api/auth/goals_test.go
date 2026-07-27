@@ -54,10 +54,10 @@ func TestCreateGoalHandler(t *testing.T) {
 			setupMock: func(md *mockDB) {},
 		},
 		{
-			name:       "Malformed bearer token",
+			name:       "malformed bearer token",
 			body:       strings.NewReader(fmt.Sprintf(`{"target": 1000, "deadline": "%s", "user_id": "%v"}`, time.Now().Add(expiresIn).Format(time.RFC3339), userId)),
 			wantStatus: http.StatusUnauthorized,
-			wantErr:    "Malformed header",
+			wantErr:    "malformed header",
 			setupHeaders: func(r *http.Request) {
 				r.Header.Set("Content-Type", "application/json")
 				r.Header.Set("Authorization", "Bear ")
