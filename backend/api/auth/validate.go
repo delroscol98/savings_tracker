@@ -100,8 +100,8 @@ func ValidateLoginParams(params LoginParams) (LoginParams, response.FieldErrors)
 
 	// JWT Duration
 	defaultExpirationTime := time.Hour * 3600
-	if params.ExpiresInSeconds == 0 {
-		params.ExpiresInSeconds = defaultExpirationTime
+	if params.ExpiresIn == 0 {
+		params.ExpiresIn = defaultExpirationTime
 	}
 
 	// Check for any error messages

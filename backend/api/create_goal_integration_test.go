@@ -132,6 +132,9 @@ func TestCreateGoalHandler_Integration(t *testing.T) {
 			}
 			tt.setupHeaders(req)
 			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatalf("Error sending request: %v", err)
+			}
 
 			if resp.StatusCode != tt.wantStatus {
 				t.Errorf(`

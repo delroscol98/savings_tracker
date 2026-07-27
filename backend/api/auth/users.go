@@ -106,7 +106,7 @@ func (a *AuthConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := MakeJWT(user.ID, a.JWTSecret, params.ExpiresInSeconds)
+	token, err := MakeJWT(user.ID, a.JWTSecret, params.ExpiresIn)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusInternalServerError, "Error creating JWT token")
