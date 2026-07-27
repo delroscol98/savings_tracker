@@ -37,6 +37,7 @@ jobs:
       - name: Run backend Go tests
         run: |
           cd backend
+          go test ./...
 
   format_check:
     name: Style
@@ -58,4 +59,4 @@ jobs:
         run: (go install honnef.co/go/tools/cmd/staticcheck@latest)
 
       - name: Run staticcheck
-        run: (cd backend && staticcheck ./...)         go test ./...
+        run: (cd backend && staticcheck ./...)
