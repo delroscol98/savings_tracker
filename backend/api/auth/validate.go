@@ -3,6 +3,7 @@ package auth
 import (
 	"net/mail"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
@@ -97,6 +98,12 @@ func ValidateLoginParams(params LoginParams) (LoginParams, response.FieldErrors)
 		fieldsErrors["password"] = append(fieldsErrors["password"], "Password cannot be empty")
 	}
 
+	// JWT Duration
+	defaultExpirationTime := time.Hour * 3600
+	if params.ExpiresIn == 0 {
+		params.ExpiresIn = defaultExpirationTime
+	}
+
 	// Check for any error messages
 	if len(fieldsErrors) == 0 {
 		return params, nil
@@ -105,13 +112,35 @@ func ValidateLoginParams(params LoginParams) (LoginParams, response.FieldErrors)
 	}
 }
 
-func ValidateResetResetPasswordParams(params ResetPasswordParams) (ResetPasswordParams, response.FieldErrors) {
+func ValidateResetPasswordParams(params ResetPasswordParams) (ResetPasswordParams, response.FieldErrors) {
 	originalParams := params
 	fieldsErrors := make(response.FieldErrors)
 
 	// Password validation
 	params.Password = strings.TrimSpace(params.Password)
 	fieldsErrors = ValidatePassword(params.Password, fieldsErrors)
+
+	// Check for any error messages
+	if len(fieldsErrors) == 0 {
+		return params, nil
+	} else {
+		return originalParams, fieldsErrors
+	}
+}
+
+func ValidateCreateGoalParams(params CreateGoalParams) (CreateGoalParams, response.FieldErrors) {
+	originalParams := params
+	fieldsErrors := make(response.FieldErrors)
+
+	// Target Validation
+	if params.Target < 0 {
+		fieldsErrors["target"] = append(fieldsErrors["target"], "Goal target cannot be negative")
+	}
+
+	// Deadline Validation
+	if time.Now().After(params.Deadline) {
+		fieldsErrors["deadline"] = append(fieldsErrors["deadline"], "Deadline cannot be in the past")
+	}
 
 	// Check for any error messages
 	if len(fieldsErrors) == 0 {

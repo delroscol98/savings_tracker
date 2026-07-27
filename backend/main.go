@@ -11,9 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/delroscol98/savings_tracker/backend/handlers"
-	"github.com/delroscol98/savings_tracker/backend/handlers/auth"
-	"github.com/delroscol98/savings_tracker/backend/handlers/health"
+	"github.com/delroscol98/savings_tracker/backend/api/auth"
+	"github.com/delroscol98/savings_tracker/backend/api/health"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/delroscol98/savings_tracker/backend/internal/middleware"
 	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
@@ -45,10 +44,13 @@ func main() {
 	// Resend
 	resendApiKey := os.Getenv("RESEND_API_KEY")
 	fromEmail := os.Getenv("FROM_EMAIL")
-	resendSender := handlers.ResendSender{
+	resendSender := auth.ResendSender{
 		Client: resend.NewClient(resendApiKey),
 		From:   fromEmail,
 	}
+
+	// JWT
+	secret := os.Getenv("JWT_SECRET")
 
 	// API setup
 	authApi := &auth.AuthConfig{
@@ -56,6 +58,7 @@ func main() {
 		RateLimiter: ratelimit.New(5, 15*time.Minute),
 		Database:    db,
 		EmailSender: &resendSender,
+		JWTSecret:   secret,
 	}
 	healthApi := &health.HealthConfig{
 		Queries: dbQueries,
@@ -69,6 +72,7 @@ func main() {
 	serveMux.Handle("POST /api/login", middleware.Log(http.HandlerFunc(authApi.LoginUserHandler)))
 	serveMux.Handle("POST /api/forgot-password", middleware.Log(http.HandlerFunc(authApi.RequestPasswordResetHandler)))
 	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(authApi.ResetPasswordHandler)))
+	serveMux.Handle("POST /api/goals", middleware.Log(http.HandlerFunc(authApi.CreateGoalHandler)))
 
 	// START THE SERVER
 	server := http.Server{
