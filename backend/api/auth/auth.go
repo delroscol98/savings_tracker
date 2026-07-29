@@ -20,6 +20,8 @@ type Queries interface {
 	DeactivateUserTokens(ctx context.Context, userID uuid.UUID) error
 	UpdateUserPassword(ctx context.Context, params database.UpdateUserPasswordParams) error
 	CreateGoal(ctx context.Context, arg database.CreateGoalParams) (database.Goal, error)
+	GetGoalById(ctx context.Context, id uuid.UUID) (database.Goal, error)
+	DeleteGoal(ctx context.Context, id uuid.UUID) error
 }
 
 type EmailSender interface {

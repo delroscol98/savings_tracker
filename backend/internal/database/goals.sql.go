@@ -44,3 +44,32 @@ func (q *Queries) CreateGoal(ctx context.Context, arg CreateGoalParams) (Goal, e
 	)
 	return i, err
 }
+
+const deleteGoal = `-- name: DeleteGoal :exec
+DELETE FROM goals
+WHERE id = $1
+`
+
+func (q *Queries) DeleteGoal(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteGoal, id)
+	return err
+}
+
+const getGoalById = `-- name: GetGoalById :one
+SELECT id, target, deadline, created_at, updated_at, user_id FROM goals
+WHERE id = $1
+`
+
+func (q *Queries) GetGoalById(ctx context.Context, id uuid.UUID) (Goal, error) {
+	row := q.db.QueryRowContext(ctx, getGoalById, id)
+	var i Goal
+	err := row.Scan(
+		&i.ID,
+		&i.Target,
+		&i.Deadline,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.UserID,
+	)
+	return i, err
+}

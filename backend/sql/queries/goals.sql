@@ -9,3 +9,11 @@ VALUES (
     $3
 )
 RETURNING *;
+
+-- name: GetGoalById :one
+SELECT * FROM goals
+WHERE id = $1;
+
+-- name: DeleteGoal :exec
+DELETE FROM goals
+WHERE id = $1;

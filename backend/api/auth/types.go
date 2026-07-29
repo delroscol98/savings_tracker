@@ -22,9 +22,9 @@ type CreateUserParams struct {
 }
 
 type LoginParams struct {
-	Email            string        `json:"email"`
-	Password         string        `json:"password"`
-	ExpiresIn        time.Duration `json:"expires_in"`
+	Email     string        `json:"email"`
+	Password  string        `json:"password"`
+	ExpiresIn time.Duration `json:"expires_in"`
 }
 
 type requestPasswordResetbody struct {
