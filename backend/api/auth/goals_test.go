@@ -17,9 +17,11 @@ import (
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 )
 
+var tokenSecret string
+
 func TestCreateGoalHandler(t *testing.T) {
 	userId := uuid.New()
-	tokenSecret := "secret"
+	tokenSecret = "secret"
 	expiresIn := time.Hour
 
 	jwt, _ := auth.MakeJWT(userId, tokenSecret, expiresIn)
@@ -133,7 +135,48 @@ Actual status code:   %v
 `, tt.wantStatus, w.Code)
 			}
 
-			t.Log(w.Body)
+			if tt.wantErr != "" {
+				var body map[string]interface{}
+				if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+					t.Fatalf("failed to decode response body: %v", err)
+				}
+				if body["error"] != tt.wantErr {
+					t.Errorf("want error %q, got %q", tt.wantErr, body["error"])
+				}
+			}
+		})
+	}
+}
+
+func TestDeleteGoalHandler(t *testing.T) {
+	tests := []struct {
+		name         string
+		goalId       string
+		wantStatus   int
+		wantErr      string
+		setupHeaders func(*http.Request)
+		seedDB       func(*mockDB)
+	}{}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := &mockDB{
+				Goals: make(map[string]database.Goal),
+			}
+			tt.seedDB(md)
+			api := auth.AuthConfig{Queries: md}
+			api.JWTSecret = tokenSecret
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/goals/{%v}", tt.goalId), nil)
+			tt.setupHeaders(r)
+			api.DeleteGoalHandler(w, r)
+
+			if w.Code != tt.wantStatus {
+				t.Errorf(`
+Expected status code: %v
+Actual status code:   %v
+`, tt.wantStatus, w.Code)
+			}
 
 			if tt.wantErr != "" {
 				var body map[string]interface{}

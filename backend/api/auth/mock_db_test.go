@@ -23,6 +23,8 @@ type mockDB struct {
 	DeactivateUserTokensErr        error
 	UpdateUserPasswordErr          error
 	CreateGoalErr                  error
+	GetGoalByIdErr                 error
+	DeleteGoalErr                  error
 	users                          map[string]database.User
 	PasswordResetTokens            map[string]database.PasswordResetToken
 	Goals                          map[string]database.Goal
@@ -212,4 +214,35 @@ func (m *mockDB) CreateGoal(ctx context.Context, params database.CreateGoalParam
 	m.Goals[goalId.String()] = goal
 
 	return goal, nil
+}
+
+func (m *mockDB) GetGoalById(ctx context.Context, id uuid.UUID) (database.Goal, error) {
+	if m.GetGoalByIdErr != nil {
+		return database.Goal{}, m.GetGoalByIdErr
+	}
+
+	if m.Goals == nil {
+		m.Goals = make(map[string]database.Goal)
+	}
+
+	goal, ok := m.Goals[id.String()]
+	if !ok {
+		return database.Goal{}, errors.New("goal not found")
+	}
+
+	return goal, nil
+}
+
+func (m *mockDB) DeleteGoal(ctx context.Context, id uuid.UUID) error {
+	if m.DeleteGoalErr != nil {
+		return m.DeleteGoalErr
+	}
+
+	if m.Goals == nil {
+		m.Goals = make(map[string]database.Goal)
+	}
+
+	delete(m.Goals, id.String())
+
+	return nil
 }
