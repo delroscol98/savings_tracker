@@ -149,6 +149,16 @@ Actual status code:   %v
 }
 
 func TestDeleteGoalHandler(t *testing.T) {
+	// Setup JWT
+	userId := uuid.New()
+	tokenSecret = "secret"
+	expiresIn := time.Hour
+
+	jwt, _ := auth.MakeJWT(userId, tokenSecret, expiresIn)
+
+	// Setup goalId
+	goalId := uuid.New()
+
 	tests := []struct {
 		name         string
 		goalId       string
@@ -156,7 +166,85 @@ func TestDeleteGoalHandler(t *testing.T) {
 		wantErr      string
 		setupHeaders func(*http.Request)
 		seedDB       func(*mockDB)
-	}{}
+	}{
+		{
+			name:       "valid delete",
+			goalId:     goalId.String(),
+			wantStatus: http.StatusOK,
+			wantErr:    "",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+			seedDB: func(md *mockDB) {
+				goal := database.Goal{
+					ID:        goalId,
+					Target:    1000,
+					Deadline:  time.Now().AddDate(1, 0, 0),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+					UserID:    userId,
+				}
+
+				md.Goals[goalId.String()] = goal
+			},
+		},
+		{
+			name:       "Unable to parse goalID",
+			goalId:     "Invalid",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "error parsing goal id",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+			seedDB: func(md *mockDB) {
+				goal := database.Goal{
+					ID:        goalId,
+					Target:    1000,
+					Deadline:  time.Now().AddDate(1, 0, 0),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+					UserID:    userId,
+				}
+
+				md.Goals[goalId.String()] = goal
+			},
+		},
+		{
+			name:       "Goal not found",
+			goalId:     goalId.String(),
+			wantStatus: http.StatusNotFound,
+			wantErr:    "error finding goal",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+			seedDB: func(md *mockDB) {},
+		},
+		{
+			name:       "mismatch user id",
+			goalId:     goalId.String(),
+			wantStatus: http.StatusForbidden,
+			wantErr:    "mismatch user id",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+			seedDB: func(md *mockDB) {
+				goal := database.Goal{
+					ID:        goalId,
+					Target:    1000,
+					Deadline:  time.Now().AddDate(1, 0, 0),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+					UserID:    uuid.New(),
+				}
+
+				md.Goals[goalId.String()] = goal
+			},
+		},
+	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -167,7 +255,8 @@ func TestDeleteGoalHandler(t *testing.T) {
 			api := auth.AuthConfig{Queries: md}
 			api.JWTSecret = tokenSecret
 			w := httptest.NewRecorder()
-			r := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/goals/{%v}", tt.goalId), nil)
+			r := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/goals/%v", tt.goalId), nil)
+			r.SetPathValue("goalId", tt.goalId)
 			tt.setupHeaders(r)
 			api.DeleteGoalHandler(w, r)
 
