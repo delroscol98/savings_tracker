@@ -113,7 +113,7 @@ func (a *AuthConfig) DeleteGoalHandler(w http.ResponseWriter, r *http.Request) {
 	err = a.Queries.DeleteGoal(r.Context(), goalId)
 	if err != nil {
 		log.Print(err)
-		response.RespondWithError(w, http.StatusNotFound, "error deleting goal")
+		response.RespondWithError(w, http.StatusBadRequest, "error deleting goal")
 		return
 	}
 
