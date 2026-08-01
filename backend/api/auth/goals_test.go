@@ -148,6 +148,120 @@ Actual status code:   %v
 	}
 }
 
+func TestUpdateGoalHandler(t *testing.T) {
+	// Setup JWT
+	userId := uuid.New()
+	tokenSecret = "secret"
+	expiresIn := time.Hour
+
+	jwt, _ := auth.MakeJWT(userId, tokenSecret, expiresIn)
+
+	// Static goal details
+	goalId := uuid.New()
+
+	// old goal
+	target := int32(1000)
+	deadline := time.Now().AddDate(0, 6, 0)
+
+	// Setup updated goal
+	updatedTarget := int32(5000)
+	updatedDeadline := time.Now().AddDate(1, 0, 0)
+
+	tests := []struct {
+		name         string
+		goalId       string
+		target       int32
+		deadline     string
+		wantStatus   int
+		wantErr      string
+		setupHeaders func(*http.Request)
+		seedDB       func(*mockDB)
+		checkGoal    func(*testing.T, auth.Goal)
+	}{
+		{
+			name:       "valid update",
+			goalId:     goalId.String(),
+			target:     updatedTarget,
+			deadline:   updatedDeadline.Format(time.RFC3339),
+			wantStatus: http.StatusOK,
+			wantErr:    "",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+			seedDB: func(md *mockDB) {
+				goal := database.Goal{
+					ID:       goalId,
+					Target:   target,
+					Deadline: deadline,
+					UserID:   userId,
+				}
+
+				md.Goals[goalId.String()] = goal
+			},
+			checkGoal: func(t *testing.T, g auth.Goal) {
+				// check updated target
+				if g.Target != updatedTarget {
+					t.Errorf(`
+Expected updated target: %v
+Actual updated target:   %v
+`, updatedTarget, g.Target)
+				}
+
+				// check updated deadline
+				if g.Deadline.Compare(deadline) != 1 {
+					t.Errorf("goal deadline should be updated")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := mockDB{
+				Goals: make(map[string]database.Goal),
+			}
+			tt.seedDB(&md)
+			api := auth.AuthConfig{Queries: &md}
+			api.JWTSecret = tokenSecret
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest(
+				http.MethodPut,
+				fmt.Sprintf("/api/goals/%v", tt.goalId),
+				strings.NewReader(fmt.Sprintf(`{"target": %v, "deadline": "%s"}`, tt.target, tt.deadline)),
+			)
+			r.SetPathValue("goalId", tt.goalId)
+			tt.setupHeaders(r)
+			api.UpdateGoalHandler(w, r)
+
+			if w.Code != tt.wantStatus {
+				t.Errorf(`
+Expected status code: %v
+Actual status code:   %v
+`, tt.wantStatus, w.Code)
+			}
+
+			if tt.wantErr != "" {
+				var body map[string]interface{}
+				if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+					t.Fatalf("failed to decode response body: %v", err)
+				}
+				if body["error"] != tt.wantErr {
+					t.Errorf("want error %q, got %q", tt.wantErr, body["error"])
+				}
+			}
+
+			if tt.checkGoal != nil {
+				var goal auth.Goal
+				if err := json.NewDecoder(w.Body).Decode(&goal); err != nil {
+					t.Fatalf("failed to decode goal: %v", err)
+				}
+				tt.checkGoal(t, goal)
+			}
+		})
+	}
+}
+
 func TestDeleteGoalHandler(t *testing.T) {
 	// Setup JWT
 	userId := uuid.New()
