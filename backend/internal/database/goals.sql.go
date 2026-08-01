@@ -73,3 +73,36 @@ func (q *Queries) GetGoalById(ctx context.Context, id uuid.UUID) (Goal, error) {
 	)
 	return i, err
 }
+
+const updateGoal = `-- name: UpdateGoal :one
+UPDATE goals
+SET target = $1, deadline = $2, updated_at = NOW()
+WHERE id = $3 AND user_id = $4
+RETURNING id, target, deadline, created_at, updated_at, user_id
+`
+
+type UpdateGoalParams struct {
+	Target   int32
+	Deadline time.Time
+	ID       uuid.UUID
+	UserID   uuid.UUID
+}
+
+func (q *Queries) UpdateGoal(ctx context.Context, arg UpdateGoalParams) (Goal, error) {
+	row := q.db.QueryRowContext(ctx, updateGoal,
+		arg.Target,
+		arg.Deadline,
+		arg.ID,
+		arg.UserID,
+	)
+	var i Goal
+	err := row.Scan(
+		&i.ID,
+		&i.Target,
+		&i.Deadline,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.UserID,
+	)
+	return i, err
+}
