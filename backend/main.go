@@ -67,12 +67,18 @@ func main() {
 	// SERVER MULTIPLEXER
 	serveMux := http.NewServeMux()
 	serveMux.Handle("GET /app", http.StripPrefix("/app", middleware.MetricInc(&serverHits, http.FileServer(http.Dir(ROOTDIR)))))
+
+	// USERS
 	serveMux.Handle("GET /health", middleware.Log(http.HandlerFunc(healthApi.CheckHealthHandler)))
 	serveMux.Handle("POST /api/users", middleware.Log(http.HandlerFunc(authApi.CreateUserHandler)))
 	serveMux.Handle("POST /api/login", middleware.Log(http.HandlerFunc(authApi.LoginUserHandler)))
 	serveMux.Handle("POST /api/forgot-password", middleware.Log(http.HandlerFunc(authApi.RequestPasswordResetHandler)))
 	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(authApi.ResetPasswordHandler)))
+
+	// GOALS
 	serveMux.Handle("POST /api/goals", middleware.Log(http.HandlerFunc(authApi.CreateGoalHandler)))
+	serveMux.Handle("PUT /api/goals/{goalId}", middleware.Log(http.HandlerFunc(authApi.UpdateGoalHandler)))
+	serveMux.Handle("DELETE /api/goals/{goalId}", middleware.Log(http.HandlerFunc(authApi.DeleteGoalHandler)))
 
 	// START THE SERVER
 	server := http.Server{

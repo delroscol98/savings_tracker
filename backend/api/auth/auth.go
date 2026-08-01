@@ -21,6 +21,7 @@ type Queries interface {
 	UpdateUserPassword(ctx context.Context, params database.UpdateUserPasswordParams) error
 	CreateGoal(ctx context.Context, arg database.CreateGoalParams) (database.Goal, error)
 	GetGoalById(ctx context.Context, id uuid.UUID) (database.Goal, error)
+	UpdateGoal(ctx context.Context, arg database.UpdateGoalParams) (database.Goal, error)
 	DeleteGoal(ctx context.Context, id uuid.UUID) error
 }
 
