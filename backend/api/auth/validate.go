@@ -128,8 +128,7 @@ func ValidateResetPasswordParams(params ResetPasswordParams) (ResetPasswordParam
 	}
 }
 
-func ValidateCreateGoalParams(params CreateGoalParams) (CreateGoalParams, response.FieldErrors) {
-	originalParams := params
+func ValidateGoalParams(params GoalFields) response.FieldErrors {
 	fieldsErrors := make(response.FieldErrors)
 
 	// Target Validation
@@ -144,8 +143,8 @@ func ValidateCreateGoalParams(params CreateGoalParams) (CreateGoalParams, respon
 
 	// Check for any error messages
 	if len(fieldsErrors) == 0 {
-		return params, nil
-	} else {
-		return originalParams, fieldsErrors
+		return nil
 	}
+
+	return fieldsErrors
 }

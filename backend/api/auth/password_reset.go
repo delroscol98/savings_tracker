@@ -14,7 +14,7 @@ import (
 )
 
 func (a *AuthConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.Request) {
-	body := requestPasswordResetbody{}
+	body := requestPasswordResetBody{}
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&body)
 	if err != nil {

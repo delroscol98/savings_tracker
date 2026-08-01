@@ -167,15 +167,15 @@ func TestValidateLoginParams(t *testing.T) {
 	}
 }
 
-func TestValidateCreateGoalParams(t *testing.T) {
+func TestValidateGoalParams(t *testing.T) {
 	tests := []struct {
 		name        string
-		params      auth.CreateGoalParams
+		params      auth.GoalFields
 		fieldErrors response.FieldErrors
 	}{
 		{
 			name: "Valid Params",
-			params: auth.CreateGoalParams{
+			params: auth.GoalFields{
 				Target:   1000,
 				Deadline: time.Now().Add(time.Hour),
 			},
@@ -183,7 +183,7 @@ func TestValidateCreateGoalParams(t *testing.T) {
 		},
 		{
 			name: "Invalid target",
-			params: auth.CreateGoalParams{
+			params: auth.GoalFields{
 				Target:   -1000,
 				Deadline: time.Now().Add(time.Hour),
 			},
@@ -193,7 +193,7 @@ func TestValidateCreateGoalParams(t *testing.T) {
 		},
 		{
 			name: "Invalid deadline",
-			params: auth.CreateGoalParams{
+			params: auth.GoalFields{
 				Target:   1000,
 				Deadline: time.Date(2000, time.January, 0, 0, 0, 0, 0, time.UTC),
 			},
@@ -205,7 +205,7 @@ func TestValidateCreateGoalParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, fieldErrors := auth.ValidateCreateGoalParams(tt.params)
+			fieldErrors := auth.ValidateGoalParams(tt.params)
 			if !cmp.Equal(fieldErrors, tt.fieldErrors) {
 				t.Errorf("FieldErrors structs do not match:\n%v", cmp.Diff(fieldErrors, tt.fieldErrors))
 			}
