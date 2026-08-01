@@ -24,6 +24,7 @@ type mockDB struct {
 	UpdateUserPasswordErr          error
 	CreateGoalErr                  error
 	GetGoalByIdErr                 error
+	UpdateGoalErr                  error
 	DeleteGoalErr                  error
 	users                          map[string]database.User
 	PasswordResetTokens            map[string]database.PasswordResetToken
@@ -229,6 +230,23 @@ func (m *mockDB) GetGoalById(ctx context.Context, id uuid.UUID) (database.Goal, 
 	if !ok {
 		return database.Goal{}, errors.New("goal not found")
 	}
+
+	return goal, nil
+}
+
+func (m *mockDB) UpdateGoal(ctx context.Context, arg database.UpdateGoalParams) (database.Goal, error) {
+	if m.UpdateGoalErr != nil {
+		return database.Goal{}, m.UpdateGoalErr
+	}
+
+	if m.Goals == nil {
+		m.Goals = make(map[string]database.Goal)
+	}
+
+	goal, _ := m.Goals[arg.ID.String()]
+	goal.Target = arg.Target
+	goal.Deadline = arg.Deadline
+	goal.UpdatedAt = time.Now()
 
 	return goal, nil
 }

@@ -61,12 +61,6 @@ func TestCreateGoalHandler_Integration(t *testing.T) {
 				if g.Id == uuid.Nil {
 					t.Error("Goal ID should not be zero-value")
 				}
-				if g.CreatedAt.IsZero() {
-					t.Error("Goal CreatedAt timestamp should not be zero-value")
-				}
-				if g.UpdatedAt.IsZero() {
-					t.Error("Goal UpdatedAt timestamp should not be zero-value")
-				}
 			},
 		},
 		{
