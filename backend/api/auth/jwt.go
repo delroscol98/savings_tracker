@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -36,16 +37,22 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 		return nil, errors.New("incorrect signing method")
 	})
 	if err != nil {
+		log.Print(err)
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return uuid.Nil, jwt.ErrTokenExpired
+		}
 		return uuid.Nil, errors.New("error parsing jwt token")
 	}
 
 	UserIDStr, err := token.Claims.GetSubject()
 	if err != nil {
+		log.Print(err)
 		return uuid.Nil, errors.New("error extracting user ID from claims")
 	}
 
 	issuer, err := token.Claims.GetIssuer()
 	if err != nil {
+		log.Print(err)
 		return uuid.Nil, errors.New("error extracting issuer from claims")
 	}
 	if issuer != "savings-tracker-access" {
@@ -54,6 +61,7 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 
 	userID, err := uuid.Parse(UserIDStr)
 	if err != nil {
+		log.Print(err)
 		return uuid.Nil, errors.New("error parsing user ID")
 	}
 
