@@ -41,6 +41,9 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return uuid.Nil, jwt.ErrTokenExpired
 		}
+		if errors.Is(err, jwt.ErrTokenUnverifiable) {
+			return uuid.Nil, jwt.ErrTokenUnverifiable
+		}
 		return uuid.Nil, errors.New("error parsing jwt token")
 	}
 
