@@ -243,7 +243,7 @@ func (m *mockDB) UpdateGoal(ctx context.Context, arg database.UpdateGoalParams) 
 		m.Goals = make(map[string]database.Goal)
 	}
 
-	goal, _ := m.Goals[arg.ID.String()]
+	goal := m.Goals[arg.ID.String()]
 	goal.Target = arg.Target
 	goal.Deadline = arg.Deadline
 	goal.UpdatedAt = time.Now()
