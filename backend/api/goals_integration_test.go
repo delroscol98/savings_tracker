@@ -457,3 +457,422 @@ Actual error:   %v
 		})
 	}
 }
+
+func TestUpdateGoalHandler_Integration(t *testing.T) {
+	expiresIn := time.Hour
+
+	// Static goal details
+	target := int32(1000)
+	deadline := time.Now().AddDate(0, 6, 0)
+
+	// Setup updated goal
+	updatedTarget := int32(5000)
+	updatedDeadline := time.Now().AddDate(1, 0, 0)
+
+	tests := []struct {
+		name         string
+		wantStatus   int
+		wantErr      string
+		seedDB       func(*testing.T) (database.User, database.Goal)
+		setupRequest func(database.Goal, *testing.T) *http.Request
+		setupHeaders func(database.User, *http.Request)
+		checkGoal    func(*testing.T, auth.Goal)
+	}{
+		{
+			name:       "valid update",
+			wantStatus: http.StatusOK,
+			wantErr:    "",
+			seedDB: func(t *testing.T) (database.User, database.Goal) {
+				hash, _ := auth.HashPassword("ThisIsATestPassword")
+
+				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
+					Email:          "foo-bar9@example.com",
+					HashedPassword: hash,
+					FullName:       "John Smith",
+				})
+				if err != nil {
+					t.Fatalf("error seeding user into database")
+				}
+
+				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
+					Target:   target,
+					Deadline: deadline,
+					UserID:   user.ID,
+				})
+				if err != nil {
+					t.Fatalf("error seeding goal into database")
+				}
+
+				return user, goal
+			},
+			setupRequest: func(g database.Goal, t *testing.T) *http.Request {
+				req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%v/api/goals/%v", testServer.URL, g.ID), strings.NewReader(fmt.Sprintf(`{"target": %v, "deadline": "%s"}`, updatedTarget, updatedDeadline.Format(time.RFC3339))))
+				if err != nil {
+					t.Fatalf("error creating new request: %v", err)
+				}
+
+				return req
+			},
+			setupHeaders: func(u database.User, r *http.Request) {
+				jwt, _ := auth.MakeJWT(u.ID, JWTSecret, expiresIn)
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+			checkGoal: func(t *testing.T, g auth.Goal) {
+				if g.Id == uuid.Nil {
+					t.Error("Goal ID should not be zero-value")
+				}
+
+				if g.Target != updatedTarget {
+					t.Errorf(`
+Expected updated target: %v
+Actual updated target:   %v
+`, updatedTarget, g.Target)
+				}
+
+				if g.Deadline.Compare(deadline) != 1 {
+					t.Errorf("goal deadline should be updated")
+				}
+
+				persisted, err := dbQueries.GetGoalById(context.Background(), g.Id)
+				if err != nil {
+					t.Fatalf("error fetching persisted goal: %v", err)
+				}
+
+				if persisted.Target != updatedTarget {
+					t.Errorf(`
+Expected persisted target: %v
+Actual persisted target:   %v
+`, updatedTarget, persisted.Target)
+				}
+
+				if persisted.Deadline.Compare(deadline) != 1 {
+					t.Errorf("persisted goal deadline should be updated")
+				}
+			},
+		},
+		{
+			name:       "goal not found",
+			wantStatus: http.StatusNotFound,
+			wantErr:    "error finding goal",
+			setupRequest: func(g database.Goal, t *testing.T) *http.Request {
+				req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%v/api/goals/%v", testServer.URL, g.ID), strings.NewReader(fmt.Sprintf(`{"target": %v, "deadline": "%s"}`, updatedTarget, updatedDeadline.Format(time.RFC3339))))
+				if err != nil {
+					t.Fatalf("error creating new request: %v", err)
+				}
+
+				return req
+			},
+			seedDB: func(t *testing.T) (database.User, database.Goal) {
+				hash, _ := auth.HashPassword("ThisIsATestPassword")
+
+				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
+					Email:          "foo-bar10@example.com",
+					HashedPassword: hash,
+					FullName:       "John Smith",
+				})
+				if err != nil {
+					t.Fatalf("error seeding user into database")
+				}
+
+				return user, database.Goal{}
+			},
+			setupHeaders: func(u database.User, r *http.Request) {
+				jwt, _ := auth.MakeJWT(u.ID, JWTSecret, expiresIn)
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+		},
+		{
+			name:       "authorization header not found",
+			wantStatus: http.StatusUnauthorized,
+			wantErr:    "authorization header not present",
+			setupRequest: func(g database.Goal, t *testing.T) *http.Request {
+				req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%v/api/goals/%v", testServer.URL, g.ID), strings.NewReader(fmt.Sprintf(`{"target": %v, "deadline": "%s"}`, updatedTarget, updatedDeadline.Format(time.RFC3339))))
+				if err != nil {
+					t.Fatalf("error creating new request: %v", err)
+				}
+
+				return req
+			},
+			seedDB: func(t *testing.T) (database.User, database.Goal) {
+				hash, _ := auth.HashPassword("ThisIsATestPassword")
+
+				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
+					Email:          "foo-bar11@example.com",
+					HashedPassword: hash,
+					FullName:       "John Smith",
+				})
+				if err != nil {
+					t.Fatalf("error seeding user into database")
+				}
+
+				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
+					Target:   target,
+					Deadline: deadline,
+					UserID:   user.ID,
+				})
+				if err != nil {
+					t.Fatalf("error seeding goal into database")
+				}
+
+				return user, goal
+			},
+			setupHeaders: func(u database.User, r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+			},
+		},
+		{
+			name:       "invalid goal id",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "error parsing goal id",
+			setupRequest: func(g database.Goal, t *testing.T) *http.Request {
+				req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%v/api/goals/abc", testServer.URL), strings.NewReader(fmt.Sprintf(`{"target": %v, "deadline": "%s"}`, updatedTarget, updatedDeadline.Format(time.RFC3339))))
+				if err != nil {
+					t.Fatalf("error creating new request: %v", err)
+				}
+
+				return req
+			},
+			seedDB: func(t *testing.T) (database.User, database.Goal) {
+				hash, _ := auth.HashPassword("ThisIsATestPassword")
+
+				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
+					Email:          "foo-bar12@example.com",
+					HashedPassword: hash,
+					FullName:       "John Smith",
+				})
+				if err != nil {
+					t.Fatalf("error seeding user into database")
+				}
+
+				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
+					Target:   target,
+					Deadline: deadline,
+					UserID:   user.ID,
+				})
+				if err != nil {
+					t.Fatalf("error seeding goal into database")
+				}
+
+				return user, goal
+			},
+			setupHeaders: func(u database.User, r *http.Request) {
+				jwt, _ := auth.MakeJWT(u.ID, JWTSecret, expiresIn)
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+		},
+		{
+			name:       "mismatch user id",
+			wantStatus: http.StatusForbidden,
+			wantErr:    "mismatch user id",
+			setupRequest: func(g database.Goal, t *testing.T) *http.Request {
+				req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%v/api/goals/%v", testServer.URL, g.ID), strings.NewReader(fmt.Sprintf(`{"target": %v, "deadline": "%s"}`, updatedTarget, updatedDeadline.Format(time.RFC3339))))
+				if err != nil {
+					t.Fatalf("error creating new request: %v", err)
+				}
+
+				return req
+			},
+			seedDB: func(t *testing.T) (database.User, database.Goal) {
+				hash, _ := auth.HashPassword("ThisIsATestPassword")
+
+				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
+					Email:          "foo-bar13@example.com",
+					HashedPassword: hash,
+					FullName:       "John Smith",
+				})
+				if err != nil {
+					t.Fatalf("error seeding user into database")
+				}
+
+				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
+					Target:   target,
+					Deadline: deadline,
+					UserID:   user.ID,
+				})
+				if err != nil {
+					t.Fatalf("error seeding goal into database")
+				}
+
+				return user, goal
+			},
+			setupHeaders: func(u database.User, r *http.Request) {
+				jwt, _ := auth.MakeJWT(uuid.New(), JWTSecret, expiresIn)
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+		},
+		{
+			name:       "expired jwt",
+			wantStatus: http.StatusUnauthorized,
+			wantErr:    "token is expired",
+			setupRequest: func(g database.Goal, t *testing.T) *http.Request {
+				req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%v/api/goals/%v", testServer.URL, g.ID), strings.NewReader(fmt.Sprintf(`{"target": %v, "deadline": "%s"}`, updatedTarget, updatedDeadline.Format(time.RFC3339))))
+				if err != nil {
+					t.Fatalf("error creating new request: %v", err)
+				}
+
+				return req
+			},
+			seedDB: func(t *testing.T) (database.User, database.Goal) {
+				hash, _ := auth.HashPassword("ThisIsATestPassword")
+
+				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
+					Email:          "foo-bar14@example.com",
+					HashedPassword: hash,
+					FullName:       "John Smith",
+				})
+				if err != nil {
+					t.Fatalf("error seeding user into database")
+				}
+
+				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
+					Target:   target,
+					Deadline: deadline,
+					UserID:   user.ID,
+				})
+				if err != nil {
+					t.Fatalf("error seeding goal into database")
+				}
+
+				return user, goal
+			},
+			setupHeaders: func(u database.User, r *http.Request) {
+				jwt, _ := auth.MakeJWT(uuid.New(), JWTSecret, -time.Hour)
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+		},
+		{
+			name:       "invalid parameters",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "Invalid parameters to create new goal",
+			setupRequest: func(g database.Goal, t *testing.T) *http.Request {
+				req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%v/api/goals/%v", testServer.URL, g.ID), strings.NewReader(fmt.Sprintf(`{"target": -100, "deadline": "%s"}`, updatedDeadline.Format(time.RFC3339))))
+				if err != nil {
+					t.Fatalf("error creating new request: %v", err)
+				}
+
+				return req
+			},
+			seedDB: func(t *testing.T) (database.User, database.Goal) {
+				hash, _ := auth.HashPassword("ThisIsATestPassword")
+
+				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
+					Email:          "foo-bar15@example.com",
+					HashedPassword: hash,
+					FullName:       "John Smith",
+				})
+				if err != nil {
+					t.Fatalf("error seeding user into database")
+				}
+
+				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
+					Target:   target,
+					Deadline: deadline,
+					UserID:   user.ID,
+				})
+				if err != nil {
+					t.Fatalf("error seeding goal into database")
+				}
+
+				return user, goal
+			},
+			setupHeaders: func(u database.User, r *http.Request) {
+				jwt, _ := auth.MakeJWT(u.ID, JWTSecret, expiresIn)
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+		},
+		{
+			name:       "poorly formatted body",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "error decoding body",
+			setupRequest: func(g database.Goal, t *testing.T) *http.Request {
+				req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%v/api/goals/%v", testServer.URL, g.ID), strings.NewReader(fmt.Sprintf(`{target": %v, "deadline": "%s"}`, updatedTarget, updatedDeadline.Format(time.RFC3339))))
+				if err != nil {
+					t.Fatalf("error creating new request: %v", err)
+				}
+
+				return req
+			},
+			seedDB: func(t *testing.T) (database.User, database.Goal) {
+				hash, _ := auth.HashPassword("ThisIsATestPassword")
+
+				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
+					Email:          "foo-bar16@example.com",
+					HashedPassword: hash,
+					FullName:       "John Smith",
+				})
+				if err != nil {
+					t.Fatalf("error seeding user into database")
+				}
+
+				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
+					Target:   target,
+					Deadline: deadline,
+					UserID:   user.ID,
+				})
+				if err != nil {
+					t.Fatalf("error seeding goal into database")
+				}
+
+				return user, goal
+			},
+			setupHeaders: func(u database.User, r *http.Request) {
+				jwt, _ := auth.MakeJWT(u.ID, JWTSecret, expiresIn)
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			user, goal := tt.seedDB(t)
+
+			req := tt.setupRequest(goal, t)
+			tt.setupHeaders(user, req)
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatalf("error sending request: %v", err)
+			}
+
+			if resp.StatusCode != tt.wantStatus {
+				t.Errorf(`
+Expected status code: %v,
+Actual status code:   %v
+`, tt.wantStatus, resp.StatusCode)
+			}
+
+			if tt.wantErr != "" {
+				body := make(map[string]interface{})
+				decoder := json.NewDecoder(resp.Body)
+				err := decoder.Decode(&body)
+				if err != nil {
+					t.Fatalf("failed to decode response body: %v", err)
+				}
+
+				if body["error"] != tt.wantErr {
+					t.Errorf(`
+Expected error: %v,
+Actual error:   %v
+`, tt.wantErr, body["error"])
+				}
+			}
+
+			if tt.checkGoal != nil {
+				goal := auth.Goal{}
+				decoder := json.NewDecoder(resp.Body)
+				err := decoder.Decode(&goal)
+				if err != nil {
+					t.Fatalf("failed to decode goal: %v", err)
+				}
+
+				tt.checkGoal(t, goal)
+			}
+		})
+	}
+}
