@@ -52,6 +52,12 @@ func main() {
 	// JWT
 	secret := os.Getenv("JWT_SECRET")
 
+	// BASE URL
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		log.Fatal("Base URL must be set")
+	}
+
 	// API setup
 	authApi := &auth.AuthConfig{
 		Queries:     dbQueries,
@@ -59,6 +65,7 @@ func main() {
 		Database:    db,
 		EmailSender: &resendSender,
 		JWTSecret:   secret,
+		BaseURL:     baseURL,
 	}
 	healthApi := &health.HealthConfig{
 		Queries: dbQueries,

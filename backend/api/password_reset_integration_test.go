@@ -1,11 +1,8 @@
 package api_test
 
 import (
-	"bytes"
 	"fmt"
-	"log"
 	"net/http"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -48,9 +45,6 @@ Actual status code:   %v
 	}
 
 	// Forgot password
-	buf := bytes.Buffer{}
-	log.SetOutput(&buf)
-	defer log.SetOutput(os.Stderr)
 
 	forgotPasswordBody := strings.NewReader(`
 {
@@ -86,7 +80,7 @@ Actual to email:   %v
 `, mockSender.Sent[0].To)
 	}
 
-	token := extractToken(t, buf.String())
+	token := extractToken(t, mockSender.Sent[0].Html)
 
 	// Reset Password
 	resetPasswordBody := strings.NewReader(fmt.Sprintf(`
