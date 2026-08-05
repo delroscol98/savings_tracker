@@ -235,6 +235,24 @@ func TestLoginHandler(t *testing.T) {
 				md.LoginErr = errors.New("Unexpected database failure")
 			},
 		},
+		{
+			name:       "negative expires_in",
+			body:       strings.NewReader(`{"email": "test@example.com", "password": "ThisIsATestPassword", "expires_in": -1}`),
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "Incorrect email or password",
+			setupMock: func(md *mockDB) {
+				password := "ThisIsATestPassword"
+				hash, _ := auth.HashPassword(password)
+
+				md.users["test@example.com"] = database.User{
+					ID:             uuid.New(),
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
+					Email:          "test@example.com",
+					HashedPassword: hash,
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {

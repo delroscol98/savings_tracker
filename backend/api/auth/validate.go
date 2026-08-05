@@ -12,6 +12,8 @@ import (
 const (
 	MIN_PASSWORD_LENGTH = 8
 	MAX_PASSWORD_LENGTH = 128
+
+	DEFAULT_LOGIN_EXPIRY_SECONDS = 3600
 )
 
 func ValidateEmail(email string, fieldsErrors response.FieldErrors) (string, response.FieldErrors) {
@@ -99,9 +101,11 @@ func ValidateLoginParams(params LoginParams) (LoginParams, response.FieldErrors)
 	}
 
 	// JWT Duration
-	defaultExpirationTime := time.Hour * 3600
+	if params.ExpiresIn < 0 {
+		fieldsErrors["expires_in"] = append(fieldsErrors["expires_in"], "Expires in cannot be negative")
+	}
 	if params.ExpiresIn == 0 {
-		params.ExpiresIn = defaultExpirationTime
+		params.ExpiresIn = DEFAULT_LOGIN_EXPIRY_SECONDS
 	}
 
 	// Check for any error messages

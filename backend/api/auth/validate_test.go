@@ -115,6 +115,7 @@ func TestValidateLoginParams(t *testing.T) {
 	tests := []struct {
 		name        string
 		params      auth.LoginParams
+		wantParams  *auth.LoginParams
 		fieldErrors response.FieldErrors
 	}{
 		{
@@ -124,6 +125,30 @@ func TestValidateLoginParams(t *testing.T) {
 				Password: "ThisIsATestPassword",
 			},
 			fieldErrors: nil,
+		},
+		{
+			name: "default expires_in applied",
+			params: auth.LoginParams{
+				Email:    "test@example.com",
+				Password: "ThisIsATestPassword",
+			},
+			wantParams: &auth.LoginParams{
+				Email:     "test@example.com",
+				Password:  "ThisIsATestPassword",
+				ExpiresIn: auth.DEFAULT_LOGIN_EXPIRY_SECONDS,
+			},
+			fieldErrors: nil,
+		},
+		{
+			name: "negative expires_in",
+			params: auth.LoginParams{
+				Email:     "test@example.com",
+				Password:  "ThisIsATestPassword",
+				ExpiresIn: -1,
+			},
+			fieldErrors: response.FieldErrors{
+				"expires_in": []string{"Expires in cannot be negative"},
+			},
 		},
 		{
 			name: "empty email",
@@ -159,9 +184,12 @@ func TestValidateLoginParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, fieldErrors := auth.ValidateLoginParams(tt.params)
+			gotParams, fieldErrors := auth.ValidateLoginParams(tt.params)
 			if !cmp.Equal(fieldErrors, tt.fieldErrors) {
 				t.Errorf("FieldErrors structs do not match:\n%v", cmp.Diff(fieldErrors, tt.fieldErrors))
+			}
+			if tt.wantParams != nil && !cmp.Equal(gotParams, *tt.wantParams) {
+				t.Errorf("Params structs do not match:\n%v", cmp.Diff(gotParams, *tt.wantParams))
 			}
 		})
 	}

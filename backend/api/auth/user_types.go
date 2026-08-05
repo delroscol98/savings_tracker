@@ -24,7 +24,7 @@ type CreateUserParams struct {
 type LoginParams struct {
 	Email     string        `json:"email"`
 	Password  string        `json:"password"`
-	ExpiresIn time.Duration `json:"expires_in"`
+	ExpiresIn int64 `json:"expires_in"` // seconds
 }
 
 type requestPasswordResetBody struct {
