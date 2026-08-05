@@ -10,6 +10,27 @@ import (
 	"github.com/google/uuid"
 )
 
+func (a *AuthConfig) GetGoals(w http.ResponseWriter, r *http.Request) {
+	dbGoals, err := a.Queries.GetGoals(r.Context())
+	if err != nil {
+		log.Print(err)
+		response.RespondWithError(w, http.StatusInternalServerError, "error fetching goals")
+		return
+	}
+
+	goals := make([]Goal, len(dbGoals))
+	for i, goal := range dbGoals {
+		goals[i] = Goal{
+			Id:       goal.ID,
+			Target:   goal.Target,
+			Deadline: goal.Deadline,
+			UserId:   goal.UserID,
+		}
+	}
+
+	response.RespondWithJSON(w, http.StatusOK, goals)
+}
+
 func (a *AuthConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) {
 	// JWT validation
 	token, err := GetBearerToken(r.Header)
