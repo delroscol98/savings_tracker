@@ -76,6 +76,7 @@ func main() {
 	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(authApi.ResetPasswordHandler)))
 
 	// GOALS
+	serveMux.Handle("GET /api/goals", middleware.Log(http.HandlerFunc(authApi.GetGoalsHandler)))
 	serveMux.Handle("POST /api/goals", middleware.Log(http.HandlerFunc(authApi.CreateGoalHandler)))
 	serveMux.Handle("PUT /api/goals/{goalId}", middleware.Log(http.HandlerFunc(authApi.UpdateGoalHandler)))
 	serveMux.Handle("DELETE /api/goals/{goalId}", middleware.Log(http.HandlerFunc(authApi.DeleteGoalHandler)))
