@@ -60,11 +60,10 @@ func (a *AuthConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	response.RespondWithJSON(
 		w, http.StatusCreated, User{
-			Id:             user.ID,
-			CreatedAt:      user.CreatedAt,
-			UpdatedAt:      user.UpdatedAt,
-			Email:          user.Email,
-			HashedPassword: user.HashedPassword,
+			Id:        user.ID,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+			Email:     user.Email,
 		},
 	)
 }
