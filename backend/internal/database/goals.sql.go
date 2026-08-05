@@ -76,10 +76,11 @@ func (q *Queries) GetGoalById(ctx context.Context, id uuid.UUID) (Goal, error) {
 
 const getGoals = `-- name: GetGoals :many
 SELECT id, target, deadline, created_at, updated_at, user_id FROM goals
+WHERE user_id = $1
 `
 
-func (q *Queries) GetGoals(ctx context.Context) ([]Goal, error) {
-	rows, err := q.db.QueryContext(ctx, getGoals)
+func (q *Queries) GetGoals(ctx context.Context, userID uuid.UUID) ([]Goal, error) {
+	rows, err := q.db.QueryContext(ctx, getGoals, userID)
 	if err != nil {
 		return nil, err
 	}
