@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (a *AuthConfig) GetGoals(w http.ResponseWriter, r *http.Request) {
+func (a *AuthConfig) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	dbGoals, err := a.Queries.GetGoals(r.Context())
 	if err != nil {
 		log.Print(err)
