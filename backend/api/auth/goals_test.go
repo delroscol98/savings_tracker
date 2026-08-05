@@ -20,6 +20,144 @@ import (
 
 var tokenSecret string
 
+func TestGetGoalsHandler(t *testing.T) {
+	goalId1 := uuid.New()
+	goalId2 := uuid.New()
+	userId := uuid.New()
+	target1 := int32(1000)
+	target2 := int32(5000)
+	deadline1 := time.Now().AddDate(0, 6, 0)
+	deadline2 := time.Now().AddDate(1, 0, 0)
+
+	tests := []struct {
+		name       string
+		wantStatus int
+		wantErr    string
+		seedDB     func(*mockDB)
+		checkGoals func(*testing.T, []auth.Goal)
+	}{
+		{
+			name:       "valid goals",
+			wantStatus: http.StatusOK,
+			wantErr:    "",
+			seedDB: func(md *mockDB) {
+				goal1 := database.Goal{
+					ID:       goalId1,
+					Target:   target1,
+					Deadline: deadline1,
+					UserID:   userId,
+				}
+				goal2 := database.Goal{
+					ID:       goalId2,
+					Target:   target2,
+					Deadline: deadline2,
+					UserID:   userId,
+				}
+
+				md.Goals[goalId1.String()] = goal1
+				md.Goals[goalId2.String()] = goal2
+			},
+			checkGoals: func(t *testing.T, goals []auth.Goal) {
+				if len(goals) != 2 {
+					t.Errorf("want %v goals, got %v", 2, len(goals))
+				}
+
+				for _, goal := range goals {
+					switch goal.Id {
+					case goalId1:
+						if goal.Target != target1 {
+							t.Errorf("want goal 1 target %v, got %v", target1, goal.Target)
+						}
+						if goal.Deadline.Compare(deadline1) != 0 {
+							t.Errorf("goal 1 deadline should match seed")
+						}
+						if goal.UserId != userId {
+							t.Errorf("goal 1 user id mismatch")
+						}
+					case goalId2:
+						if goal.Target != target2 {
+							t.Errorf("want goal 2 target %v, got %v", target2, goal.Target)
+						}
+						if goal.Deadline.Compare(deadline2) != 0 {
+							t.Errorf("goal 2 deadline should match seed")
+						}
+						if goal.UserId != userId {
+							t.Errorf("goal 2 user id mismatch")
+						}
+					default:
+						t.Errorf("unexpected goal id %v", goal.Id)
+					}
+				}
+			},
+		},
+		{
+			name:       "no goals",
+			wantStatus: http.StatusOK,
+			wantErr:    "",
+			seedDB:     func(md *mockDB) {},
+			checkGoals: func(t *testing.T, goals []auth.Goal) {
+				if len(goals) != 0 {
+					t.Errorf("want %v goals, got %v", 0, len(goals))
+				}
+			},
+		},
+		{
+			name:       "database error",
+			wantStatus: http.StatusInternalServerError,
+			wantErr:    "error fetching goals",
+			seedDB: func(md *mockDB) {
+				md.GetGoalsErr = errors.New("Goal table error")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := &mockDB{
+				Goals: make(map[string]database.Goal),
+			}
+			tt.seedDB(md)
+
+			api := auth.AuthConfig{Queries: md}
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest(http.MethodGet, "/api/goals", nil)
+			api.GetGoalsHandler(w, r)
+
+			if w.Code != tt.wantStatus {
+				t.Errorf(`
+Expected status code: %v
+Actual status code:   %v
+`, tt.wantStatus, w.Code)
+			}
+
+			if tt.wantErr != "" {
+				var body map[string]interface{}
+				if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+					t.Fatalf("failed to decode response body: %v", err)
+				}
+				if body["error"] != tt.wantErr {
+					t.Errorf("want error %q, got %q", tt.wantErr, body["error"])
+				}
+			}
+
+			if tt.checkGoals != nil {
+				if tt.name == "no goals" {
+					raw := w.Body.String()
+					if !strings.HasPrefix(raw, "[") || !strings.HasSuffix(strings.TrimSpace(raw), "]") {
+						t.Errorf("expected raw body to be an array, got %q", raw)
+					}
+				}
+
+				var goals []auth.Goal
+				if err := json.NewDecoder(w.Body).Decode(&goals); err != nil {
+					t.Fatalf("failed to decode goals: %v", err)
+				}
+				tt.checkGoals(t, goals)
+			}
+		})
+	}
+}
+
 func TestCreateGoalHandler(t *testing.T) {
 	userId := uuid.New()
 	tokenSecret = "secret"
