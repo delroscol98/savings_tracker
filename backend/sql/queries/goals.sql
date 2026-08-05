@@ -25,4 +25,5 @@ DELETE FROM goals
 WHERE id = $1;
 
 -- name: GetGoals :many
-SELECT * FROM goals;
+SELECT * FROM goals
+WHERE user_id = $1;

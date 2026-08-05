@@ -195,7 +195,7 @@ func (m *mockDB) UpdateUserPassword(ctx context.Context, params database.UpdateU
 	return errors.New("User not found")
 }
 
-func (m *mockDB) GetGoals(ctx context.Context) ([]database.Goal, error) {
+func (m *mockDB) GetGoals(ctx context.Context, userID uuid.UUID) ([]database.Goal, error) {
 	if m.GetGoalsErr != nil {
 		return nil, m.GetGoalsErr
 	}
@@ -206,7 +206,9 @@ func (m *mockDB) GetGoals(ctx context.Context) ([]database.Goal, error) {
 
 	goals := make([]database.Goal, 0, len(m.Goals))
 	for _, goal := range m.Goals {
-		goals = append(goals, goal)
+		if userID == goal.UserID {
+			goals = append(goals, goal)
+		}
 	}
 
 	return goals, nil

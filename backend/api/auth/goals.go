@@ -11,7 +11,22 @@ import (
 )
 
 func (a *AuthConfig) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
-	dbGoals, err := a.Queries.GetGoals(r.Context())
+	// JWT validation
+	token, err := GetBearerToken(r.Header)
+	if err != nil {
+		log.Print(err)
+		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	userId, err := ValidateJWT(token, a.JWTSecret)
+	if err != nil {
+		log.Print(err)
+		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	dbGoals, err := a.Queries.GetGoals(r.Context(), userId)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusInternalServerError, "error fetching goals")

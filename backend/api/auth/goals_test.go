@@ -24,22 +24,32 @@ func TestGetGoalsHandler(t *testing.T) {
 	goalId1 := uuid.New()
 	goalId2 := uuid.New()
 	userId := uuid.New()
+	otherUserId := uuid.New()
 	target1 := int32(1000)
 	target2 := int32(5000)
 	deadline1 := time.Now().AddDate(0, 6, 0)
 	deadline2 := time.Now().AddDate(1, 0, 0)
 
+	tokenSecret = "secret"
+	expiresIn := time.Hour
+	token, _ := auth.MakeJWT(userId, tokenSecret, expiresIn)
+
 	tests := []struct {
-		name       string
-		wantStatus int
-		wantErr    string
-		seedDB     func(*mockDB)
-		checkGoals func(*testing.T, []auth.Goal)
+		name         string
+		wantStatus   int
+		wantErr      string
+		setupHeaders func(*http.Request)
+		seedDB       func(*mockDB)
+		checkGoals   func(*testing.T, []auth.Goal)
 	}{
 		{
 			name:       "valid goals",
 			wantStatus: http.StatusOK,
 			wantErr:    "",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+			},
 			seedDB: func(md *mockDB) {
 				goal1 := database.Goal{
 					ID:       goalId1,
@@ -94,7 +104,11 @@ func TestGetGoalsHandler(t *testing.T) {
 			name:       "no goals",
 			wantStatus: http.StatusOK,
 			wantErr:    "",
-			seedDB:     func(md *mockDB) {},
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+			},
+			seedDB: func(md *mockDB) {},
 			checkGoals: func(t *testing.T, goals []auth.Goal) {
 				if len(goals) != 0 {
 					t.Errorf("want %v goals, got %v", 0, len(goals))
@@ -102,9 +116,78 @@ func TestGetGoalsHandler(t *testing.T) {
 			},
 		},
 		{
+			name:       "mismatched user id",
+			wantStatus: http.StatusOK,
+			wantErr:    "",
+			setupHeaders: func(r *http.Request) {
+				otherToken, _ := auth.MakeJWT(otherUserId, tokenSecret, expiresIn)
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", otherToken))
+			},
+			seedDB: func(md *mockDB) {
+				goal1 := database.Goal{
+					ID:       goalId1,
+					Target:   target1,
+					Deadline: deadline1,
+					UserID:   userId,
+				}
+
+				md.Goals[goalId1.String()] = goal1
+			},
+			checkGoals: func(t *testing.T, goals []auth.Goal) {
+				if len(goals) != 0 {
+					t.Errorf("want %v goals, got %v", 0, len(goals))
+				}
+			},
+		},
+		{
+			name:       "authorization header not present",
+			wantStatus: http.StatusUnauthorized,
+			wantErr:    "authorization header not present",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+			},
+			seedDB: func(md *mockDB) {},
+		},
+		{
+			name:       "malformed header",
+			wantStatus: http.StatusUnauthorized,
+			wantErr:    "malformed header",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", "Bear ")
+			},
+			seedDB: func(md *mockDB) {},
+		},
+		{
+			name:       "unable to parse token",
+			wantStatus: http.StatusUnauthorized,
+			wantErr:    "error parsing jwt token",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", "Bearer invalid.token.string")
+			},
+			seedDB: func(md *mockDB) {},
+		},
+		{
+			name:       "token is expired",
+			wantStatus: http.StatusUnauthorized,
+			wantErr:    "token is expired",
+			setupHeaders: func(r *http.Request) {
+				expiredToken, _ := auth.MakeJWT(userId, tokenSecret, -expiresIn)
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", expiredToken))
+			},
+			seedDB: func(md *mockDB) {},
+		},
+		{
 			name:       "database error",
 			wantStatus: http.StatusInternalServerError,
 			wantErr:    "error fetching goals",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+			},
 			seedDB: func(md *mockDB) {
 				md.GetGoalsErr = errors.New("Goal table error")
 			},
@@ -119,8 +202,10 @@ func TestGetGoalsHandler(t *testing.T) {
 			tt.seedDB(md)
 
 			api := auth.AuthConfig{Queries: md}
+			api.JWTSecret = tokenSecret
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest(http.MethodGet, "/api/goals", nil)
+			tt.setupHeaders(r)
 			api.GetGoalsHandler(w, r)
 
 			if w.Code != tt.wantStatus {
