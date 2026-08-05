@@ -91,7 +91,7 @@ func (a *AuthConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Print(err)
-			response.RespondWithError(w, http.StatusBadRequest, "User not found")
+			response.RespondWithError(w, http.StatusForbidden, "Incorrect email or password")
 			return
 		}
 		log.Print(err)

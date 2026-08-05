@@ -46,8 +46,8 @@ func TestLoginHandler_Integration(t *testing.T) {
 			name:       "incorrect email",
 			email:      "foo-3@example.com",
 			password:   "AnotherTestPassword",
-			wantStatus: http.StatusBadRequest,
-			wantErr:    "User not found",
+			wantStatus: http.StatusForbidden,
+			wantErr:    "Incorrect email or password",
 			seedDB: func(t *testing.T) {
 				hashedPw, err := auth.HashPassword("ThisIsATestPassword")
 				if err != nil {

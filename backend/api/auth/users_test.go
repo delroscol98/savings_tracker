@@ -193,8 +193,8 @@ func TestLoginHandler(t *testing.T) {
 		{
 			name:       "incorrect email",
 			body:       strings.NewReader(`{"email": "wrong@example.com", "password": "ThisIsATestPassword"}`),
-			wantStatus: http.StatusBadRequest,
-			wantErr:    "User not found",
+			wantStatus: http.StatusForbidden,
+			wantErr:    "Incorrect email or password",
 			setupMock: func(md *mockDB) {
 				password := "ThisIsATestPassword"
 				hash, _ := auth.HashPassword(password)
