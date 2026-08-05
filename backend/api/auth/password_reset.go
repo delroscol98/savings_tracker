@@ -106,7 +106,6 @@ func (a *AuthConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.
 	}
 
 	link := fmt.Sprintf("http://%v/reset-password?token=%v", r.Host, token)
-	log.Printf("Password reset link: %v", link)
 	err = a.EmailSender.Send(user.Email, "Savings-Tracker: Reset Your Password", fmt.Sprintf(`
 	<p>Click the following <a href="%v">link</a> to reset your password.</p>
 	`, link))
