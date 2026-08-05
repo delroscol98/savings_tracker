@@ -36,6 +36,7 @@ type AuthConfig struct {
 	RateLimiter *ratelimit.RateLimiter
 	EmailSender EmailSender
 	JWTSecret   string
+	BaseURL     string
 }
 
 type ResendSender struct {

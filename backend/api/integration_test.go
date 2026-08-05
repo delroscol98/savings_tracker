@@ -26,6 +26,7 @@ var (
 	testRateLimiter *ratelimit.RateLimiter
 	mockSender      *MockEmailSender
 	JWTSecret       string
+	baseURL         string
 )
 
 func TestMain(m *testing.M) {
@@ -110,12 +111,15 @@ func TestMain(m *testing.M) {
 	mockSender = &MockEmailSender{}
 
 	JWTSecret = "secret"
+
+	baseURL = "https://localhost:8080"
 	authApi := &auth.AuthConfig{
 		Queries:     dbQueries,
 		Database:    db,
 		RateLimiter: testRateLimiter,
 		EmailSender: mockSender,
 		JWTSecret:   JWTSecret,
+		BaseURL:     baseURL,
 	}
 	healthApi := &health.HealthConfig{
 		Queries: dbQueries,
