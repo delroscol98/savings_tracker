@@ -271,7 +271,7 @@ func (m *mockDB) UpdateGoal(ctx context.Context, arg database.UpdateGoalParams) 
 	return goal, nil
 }
 
-func (m *mockDB) DeleteGoal(ctx context.Context, id uuid.UUID) error {
+func (m *mockDB) DeleteGoal(ctx context.Context, arg database.DeleteGoalParams) error {
 	if m.DeleteGoalErr != nil {
 		return m.DeleteGoalErr
 	}
@@ -280,7 +280,7 @@ func (m *mockDB) DeleteGoal(ctx context.Context, id uuid.UUID) error {
 		m.Goals = make(map[string]database.Goal)
 	}
 
-	delete(m.Goals, id.String())
+	delete(m.Goals, arg.ID.String())
 
 	return nil
 }

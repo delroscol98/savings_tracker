@@ -22,7 +22,7 @@ RETURNING *;
 
 -- name: DeleteGoal :exec
 DELETE FROM goals
-WHERE id = $1;
+WHERE id = $1 AND user_id = $2;
 
 -- name: GetGoals :many
 SELECT * FROM goals

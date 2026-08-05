@@ -193,7 +193,7 @@ Actual status code:   %v
 				t.Fatalf("expected token to be valid")
 			}
 
-			ttl := claims.ExpiresAt.Time.Sub(time.Now())
+			ttl := time.Until(claims.ExpiresAt.Time)
 			if ttl < tt.minTTL || ttl > tt.maxTTL {
 				t.Fatalf(`
 Expected token TTL within window: [%v, %v]
