@@ -80,6 +80,14 @@ func TestGetBearerToken(t *testing.T) {
 			wantErr:   true,
 		},
 		{
+			name: "Malformed Authorization header - No Trailing Space",
+			headers: http.Header{
+				"Authorization": []string{"Bearer"},
+			},
+			wantToken: "",
+			wantErr:   true,
+		},
+		{
 			name: "Malformed Authorization header",
 			headers: http.Header{
 				"Authorization": []string{"InvalidBearer token"},

@@ -78,7 +78,7 @@ func GetBearerToken(headers http.Header) (string, error) {
 	}
 	bearerToken := strings.Split(header[0], " ")
 	bearer := strings.TrimSpace(bearerToken[0])
-	if bearer != "Bearer" {
+	if len(bearerToken) != 2 || bearer != "Bearer" {
 		return "", errors.New("malformed header")
 	}
 	token := strings.TrimSpace(bearerToken[1])
