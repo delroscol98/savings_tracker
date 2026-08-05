@@ -44,6 +44,7 @@ func (a *AuthConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := a.Queries.CreateUser(r.Context(), database.CreateUserParams{
 		Email:          validatedParams.Email,
 		HashedPassword: hashedPW,
+		FullName:       validatedParams.FullName,
 	})
 	if err != nil {
 		// PostgreSQL's unique violation code is 23505
