@@ -128,6 +128,7 @@ func TestMain(m *testing.M) {
 	serveMux.Handle("POST /api/login", middleware.Log(http.HandlerFunc(authApi.LoginUserHandler)))
 	serveMux.Handle("POST /api/forgot-password", middleware.Log(http.HandlerFunc(authApi.RequestPasswordResetHandler)))
 	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(authApi.ResetPasswordHandler)))
+	serveMux.Handle("GET /api/goals", middleware.Log(http.HandlerFunc(authApi.GetGoalsHandler)))
 	serveMux.Handle("POST /api/goals", middleware.Log(http.HandlerFunc(authApi.CreateGoalHandler)))
 	serveMux.Handle("PUT /api/goals/{goalId}", middleware.Log(http.HandlerFunc(authApi.UpdateGoalHandler)))
 	serveMux.Handle("DELETE /api/goals/{goalId}", middleware.Log(http.HandlerFunc(authApi.DeleteGoalHandler)))

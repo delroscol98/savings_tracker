@@ -15,6 +15,98 @@ import (
 	"github.com/google/uuid"
 )
 
+func TestGetGoalsHandler_Integration(t *testing.T) {
+	target := int32(1000)
+	deadline := time.Now().UTC().AddDate(1, 0, 0)
+
+	tests := []struct {
+		name       string
+		wantStatus int
+		seedDB     func(*testing.T) (database.User, database.Goal)
+		checkGoals func(*testing.T, []auth.Goal, database.User, database.Goal)
+	}{
+		{
+			name:       "valid goals",
+			wantStatus: http.StatusOK,
+			seedDB: func(t *testing.T) (database.User, database.Goal) {
+				hash, _ := auth.HashPassword("ThisIsATestPassword")
+
+				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
+					Email:          "foo-bar17@example.com",
+					HashedPassword: hash,
+					FullName:       "John Smith",
+				})
+				if err != nil {
+					t.Fatalf("error seeding user into database: %v", err)
+				}
+
+				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
+					Target:   target,
+					Deadline: deadline,
+					UserID:   user.ID,
+				})
+				if err != nil {
+					t.Fatalf("error seeding goal into database: %v", err)
+				}
+
+				return user, goal
+			},
+			checkGoals: func(t *testing.T, goals []auth.Goal, user database.User, goal database.Goal) {
+				found := false
+				for _, g := range goals {
+					if g.Id == goal.ID {
+						found = true
+						if g.Target != target {
+							t.Errorf("want target %v, got %v", target, g.Target)
+						}
+						if g.Deadline.Truncate(time.Second).Compare(deadline.Truncate(time.Second)) != 0 {
+							t.Errorf("goal deadline should match seed: got %v want %v", g.Deadline, deadline)
+						}
+						if g.UserId != user.ID {
+							t.Errorf("want user id %v, got %v", user.ID, g.UserId)
+						}
+					}
+				}
+				if !found {
+					t.Errorf("seeded goal %v not found in response", goal.ID)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			user, goal := tt.seedDB(t)
+
+			req, err := http.NewRequest(http.MethodGet, testServer.URL+"/api/goals", nil)
+			if err != nil {
+				t.Fatalf("error creating new request: %v", err)
+			}
+
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatalf("error sending request: %v", err)
+			}
+
+			if resp.StatusCode != tt.wantStatus {
+				t.Errorf(`
+Expected status code: %v,
+Actual status code:   %v
+`, tt.wantStatus, resp.StatusCode)
+			}
+
+			var goals []auth.Goal
+			decoder := json.NewDecoder(resp.Body)
+			err = decoder.Decode(&goals)
+			if err != nil {
+				t.Fatalf("failed to decode goals: %v", err)
+			}
+
+			tt.checkGoals(t, goals, user, goal)
+		})
+	}
+}
+
 func TestCreateGoalHandler_Integration(t *testing.T) {
 	expiresIn := time.Hour
 	extraUserId := uuid.New()
