@@ -23,7 +23,7 @@ type Queries interface {
 	CreateGoal(ctx context.Context, arg database.CreateGoalParams) (database.Goal, error)
 	GetGoalById(ctx context.Context, id uuid.UUID) (database.Goal, error)
 	UpdateGoal(ctx context.Context, arg database.UpdateGoalParams) (database.Goal, error)
-	DeleteGoal(ctx context.Context, id uuid.UUID) error
+	DeleteGoal(ctx context.Context, arg database.DeleteGoalParams) error
 }
 
 type EmailSender interface {

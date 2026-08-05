@@ -2,7 +2,9 @@ package api_test
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -1094,5 +1096,55 @@ Actual error:   %v
 				tt.checkGoal(t, goal)
 			}
 		})
+	}
+}
+
+func TestDeleteGoalScopesByUser(t *testing.T) {
+	hash, _ := auth.HashPassword("ThisIsATestPassword")
+
+	owner, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
+		Email:          "delete-scope-owner@example.com",
+		HashedPassword: hash,
+		FullName:       "John Smith",
+	})
+	if err != nil {
+		t.Fatalf("error seeding owner user into database: %v", err)
+	}
+
+	goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
+		Target:   1000,
+		Deadline: time.Now().AddDate(1, 0, 0),
+		UserID:   owner.ID,
+	})
+	if err != nil {
+		t.Fatalf("error seeding goal into database: %v", err)
+	}
+
+	// Deleting with a non-owner user must not remove the goal
+	err = dbQueries.DeleteGoal(context.Background(), database.DeleteGoalParams{
+		ID:     goal.ID,
+		UserID: uuid.New(),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error deleting goal: %v", err)
+	}
+
+	_, err = dbQueries.GetGoalById(context.Background(), goal.ID)
+	if err != nil {
+		t.Fatalf("goal should still exist after delete scoped to another user: %v", err)
+	}
+
+	// Deleting with the owner must remove the goal
+	err = dbQueries.DeleteGoal(context.Background(), database.DeleteGoalParams{
+		ID:     goal.ID,
+		UserID: owner.ID,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error deleting goal: %v", err)
+	}
+
+	_, err = dbQueries.GetGoalById(context.Background(), goal.ID)
+	if !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("expected goal to be deleted, got error: %v", err)
 	}
 }
