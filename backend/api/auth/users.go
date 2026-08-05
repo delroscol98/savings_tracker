@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
@@ -106,7 +107,7 @@ func (a *AuthConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := MakeJWT(user.ID, a.JWTSecret, params.ExpiresIn)
+	token, err := MakeJWT(user.ID, a.JWTSecret, time.Duration(validatedParams.ExpiresIn)*time.Second)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusInternalServerError, "Error creating JWT token")
