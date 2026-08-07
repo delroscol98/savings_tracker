@@ -2,13 +2,16 @@ package goals
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type Queries interface {
@@ -89,8 +92,14 @@ func (a *GoalsConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) 
 		UserID:   params.UserId,
 	})
 	if err != nil {
+		// PostgreSQL's foreign key violation code is 23503
+		var pqe *pq.Error
+		if errors.As(err, &pqe) && pqe.Code == "23503" {
+			response.RespondWithError(w, http.StatusBadRequest, "Error creating goal")
+			return
+		}
 		log.Print(err)
-		response.RespondWithError(w, http.StatusBadRequest, "Error creating goal")
+		response.RespondWithError(w, http.StatusInternalServerError, "Error creating goal")
 		return
 	}
 
@@ -120,8 +129,12 @@ func (a *GoalsConfig) UpdateGoalHandler(w http.ResponseWriter, r *http.Request) 
 
 	goal, err := a.Queries.GetGoalById(r.Context(), goalId)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			response.RespondWithError(w, http.StatusNotFound, "error finding goal")
+			return
+		}
 		log.Print(err)
-		response.RespondWithError(w, http.StatusNotFound, "error finding goal")
+		response.RespondWithError(w, http.StatusInternalServerError, "error finding goal")
 		return
 	}
 
@@ -157,7 +170,7 @@ func (a *GoalsConfig) UpdateGoalHandler(w http.ResponseWriter, r *http.Request) 
 	})
 	if err != nil {
 		log.Print(err)
-		response.RespondWithError(w, http.StatusBadRequest, "error updating goal")
+		response.RespondWithError(w, http.StatusInternalServerError, "error updating goal")
 		return
 	}
 
@@ -187,8 +200,12 @@ func (a *GoalsConfig) DeleteGoalHandler(w http.ResponseWriter, r *http.Request) 
 
 	goal, err := a.Queries.GetGoalById(r.Context(), goalId)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			response.RespondWithError(w, http.StatusNotFound, "error finding goal")
+			return
+		}
 		log.Print(err)
-		response.RespondWithError(w, http.StatusNotFound, "error finding goal")
+		response.RespondWithError(w, http.StatusInternalServerError, "error finding goal")
 		return
 	}
 
@@ -203,7 +220,7 @@ func (a *GoalsConfig) DeleteGoalHandler(w http.ResponseWriter, r *http.Request) 
 	})
 	if err != nil {
 		log.Print(err)
-		response.RespondWithError(w, http.StatusBadRequest, "error deleting goal")
+		response.RespondWithError(w, http.StatusInternalServerError, "error deleting goal")
 		return
 	}
 

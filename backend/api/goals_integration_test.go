@@ -35,27 +35,7 @@ func TestGetGoalsHandler_Integration(t *testing.T) {
 			wantStatus: http.StatusOK,
 			wantErr:    "",
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar17@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database: %v", err)
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   target,
-					Deadline: deadline,
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database: %v", err)
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar17@example.com", target, deadline)
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				jwt, _ := auth.MakeJWT(u.ID, JWTSecret, time.Hour)
@@ -88,27 +68,7 @@ func TestGetGoalsHandler_Integration(t *testing.T) {
 			wantStatus: http.StatusOK,
 			wantErr:    "",
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar18@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database: %v", err)
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   target,
-					Deadline: deadline,
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database: %v", err)
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar18@example.com", target, deadline)
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				jwt, _ := auth.MakeJWT(uuid.New(), JWTSecret, time.Hour)
@@ -126,27 +86,7 @@ func TestGetGoalsHandler_Integration(t *testing.T) {
 			wantStatus: http.StatusUnauthorized,
 			wantErr:    "authorization header not present",
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar19@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database: %v", err)
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   target,
-					Deadline: deadline,
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database: %v", err)
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar19@example.com", target, deadline)
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				r.Header.Set("Content-Type", "application/json")
@@ -157,27 +97,7 @@ func TestGetGoalsHandler_Integration(t *testing.T) {
 			wantStatus: http.StatusUnauthorized,
 			wantErr:    "token is expired",
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar20@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database: %v", err)
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   target,
-					Deadline: deadline,
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database: %v", err)
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar20@example.com", target, deadline)
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				jwt, _ := auth.MakeJWT(uuid.New(), JWTSecret, -time.Hour)
@@ -243,19 +163,7 @@ func TestCreateGoalHandler_Integration(t *testing.T) {
 	extraUserId := uuid.New()
 
 	// Seed Database with a single user
-	hashedPw, err := auth.HashPassword("ThisIsATestPassword")
-	if err != nil {
-		t.Fatalf("Failed to hash password: %v", err)
-	}
-
-	user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-		Email:          "foobar@foobar.com",
-		HashedPassword: hashedPw,
-		FullName:       "Foo bar",
-	})
-	if err != nil {
-		t.Fatalf("Failed to seed new user: %v", err)
-	}
+	user := seedUser(t, "foobar@foobar.com")
 
 	tests := []struct {
 		name         string
@@ -411,27 +319,7 @@ func TestDeleteGoalHandler_Integration(t *testing.T) {
 			wantStatus: http.StatusOK,
 			wantErr:    "",
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar2@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database")
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   1000,
-					Deadline: time.Now().AddDate(1, 0, 0),
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database")
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar2@example.com", 1000, time.Now().AddDate(1, 0, 0))
 			},
 			setupRequest: func(g database.Goal, t *testing.T) *http.Request {
 				req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%v/api/goals/%v", testServer.URL, g.ID), nil)
@@ -460,18 +348,7 @@ func TestDeleteGoalHandler_Integration(t *testing.T) {
 				return req
 			},
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar3@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database")
-				}
-
-				return user, database.Goal{}
+				return seedUser(t, "foo-bar3@example.com"), database.Goal{}
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				jwt, _ := auth.MakeJWT(u.ID, JWTSecret, time.Hour)
@@ -492,28 +369,7 @@ func TestDeleteGoalHandler_Integration(t *testing.T) {
 				return req
 			},
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar4@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Log(err)
-					t.Fatalf("error seeding user into database")
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   1000,
-					Deadline: time.Now().AddDate(1, 0, 0),
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database")
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar4@example.com", 1000, time.Now().AddDate(1, 0, 0))
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				r.Header.Set("Content-Type", "application/json")
@@ -532,27 +388,7 @@ func TestDeleteGoalHandler_Integration(t *testing.T) {
 				return req
 			},
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar5@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database")
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   1000,
-					Deadline: time.Now().AddDate(1, 0, 0),
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database")
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar5@example.com", 1000, time.Now().AddDate(1, 0, 0))
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				jwt, _ := auth.MakeJWT(u.ID, JWTSecret, time.Hour)
@@ -573,27 +409,7 @@ func TestDeleteGoalHandler_Integration(t *testing.T) {
 				return req
 			},
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar7@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database")
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   1000,
-					Deadline: time.Now().AddDate(1, 0, 0),
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database")
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar7@example.com", 1000, time.Now().AddDate(1, 0, 0))
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				jwt, _ := auth.MakeJWT(uuid.New(), JWTSecret, time.Hour)
@@ -614,27 +430,7 @@ func TestDeleteGoalHandler_Integration(t *testing.T) {
 				return req
 			},
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar8@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database")
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   1000,
-					Deadline: time.Now().AddDate(1, 0, 0),
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database")
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar8@example.com", 1000, time.Now().AddDate(1, 0, 0))
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				jwt, _ := auth.MakeJWT(uuid.New(), JWTSecret, -time.Hour)
@@ -706,27 +502,7 @@ func TestUpdateGoalHandler_Integration(t *testing.T) {
 			wantStatus: http.StatusOK,
 			wantErr:    "",
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar9@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database")
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   target,
-					Deadline: deadline,
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database")
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar9@example.com", target, deadline)
 			},
 			setupRequest: func(g database.Goal, t *testing.T) *http.Request {
 				req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%v/api/goals/%v", testServer.URL, g.ID), strings.NewReader(fmt.Sprintf(`{"target": %v, "deadline": "%s"}`, updatedTarget, updatedDeadline.Format(time.RFC3339))))
@@ -787,18 +563,7 @@ Actual persisted target:   %v
 				return req
 			},
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar10@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database")
-				}
-
-				return user, database.Goal{}
+				return seedUser(t, "foo-bar10@example.com"), database.Goal{}
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				jwt, _ := auth.MakeJWT(u.ID, JWTSecret, expiresIn)
@@ -819,27 +584,7 @@ Actual persisted target:   %v
 				return req
 			},
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar11@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database")
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   target,
-					Deadline: deadline,
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database")
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar11@example.com", target, deadline)
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				r.Header.Set("Content-Type", "application/json")
@@ -858,27 +603,7 @@ Actual persisted target:   %v
 				return req
 			},
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar12@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database")
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   target,
-					Deadline: deadline,
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database")
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar12@example.com", target, deadline)
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				jwt, _ := auth.MakeJWT(u.ID, JWTSecret, expiresIn)
@@ -899,27 +624,7 @@ Actual persisted target:   %v
 				return req
 			},
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar13@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database")
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   target,
-					Deadline: deadline,
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database")
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar13@example.com", target, deadline)
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				jwt, _ := auth.MakeJWT(uuid.New(), JWTSecret, expiresIn)
@@ -940,27 +645,7 @@ Actual persisted target:   %v
 				return req
 			},
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar14@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database")
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   target,
-					Deadline: deadline,
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database")
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar14@example.com", target, deadline)
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				jwt, _ := auth.MakeJWT(uuid.New(), JWTSecret, -time.Hour)
@@ -981,27 +666,7 @@ Actual persisted target:   %v
 				return req
 			},
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar15@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database")
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   target,
-					Deadline: deadline,
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database")
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar15@example.com", target, deadline)
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				jwt, _ := auth.MakeJWT(u.ID, JWTSecret, expiresIn)
@@ -1022,27 +687,7 @@ Actual persisted target:   %v
 				return req
 			},
 			seedDB: func(t *testing.T) (database.User, database.Goal) {
-				hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-				user, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-bar16@example.com",
-					HashedPassword: hash,
-					FullName:       "John Smith",
-				})
-				if err != nil {
-					t.Fatalf("error seeding user into database")
-				}
-
-				goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-					Target:   target,
-					Deadline: deadline,
-					UserID:   user.ID,
-				})
-				if err != nil {
-					t.Fatalf("error seeding goal into database")
-				}
-
-				return user, goal
+				return seedUserWithGoal(t, "foo-bar16@example.com", target, deadline)
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
 				jwt, _ := auth.MakeJWT(u.ID, JWTSecret, expiresIn)
@@ -1101,28 +746,10 @@ Actual error:   %v
 }
 
 func TestDeleteGoalScopesByUser(t *testing.T) {
-	hash, _ := auth.HashPassword("ThisIsATestPassword")
-
-	owner, err := dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-		Email:          "delete-scope-owner@example.com",
-		HashedPassword: hash,
-		FullName:       "John Smith",
-	})
-	if err != nil {
-		t.Fatalf("error seeding owner user into database: %v", err)
-	}
-
-	goal, err := dbQueries.CreateGoal(context.Background(), database.CreateGoalParams{
-		Target:   1000,
-		Deadline: time.Now().AddDate(1, 0, 0),
-		UserID:   owner.ID,
-	})
-	if err != nil {
-		t.Fatalf("error seeding goal into database: %v", err)
-	}
+	owner, goal := seedUserWithGoal(t, "delete-scope-owner@example.com", 1000, time.Now().AddDate(1, 0, 0))
 
 	// Deleting with a non-owner user must not remove the goal
-	err = dbQueries.DeleteGoal(context.Background(), database.DeleteGoalParams{
+	err := dbQueries.DeleteGoal(context.Background(), database.DeleteGoalParams{
 		ID:     goal.ID,
 		UserID: uuid.New(),
 	})

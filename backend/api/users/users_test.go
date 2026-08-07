@@ -116,7 +116,7 @@ func TestCreateUserHandler(t *testing.T) {
 			setupMock: func(md *mockDB) {
 				md.CreateUserErr = errors.New("connection refused")
 			},
-			wantStatus: http.StatusBadRequest,
+			wantStatus: http.StatusInternalServerError,
 			wantErr:    "Error creating user",
 		},
 	}

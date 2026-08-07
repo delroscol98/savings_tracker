@@ -270,7 +270,7 @@ func TestCreateGoalHandler(t *testing.T) {
 			name:       "database error",
 			userId:     userId,
 			body:       strings.NewReader(fmt.Sprintf(`{"target": 1000, "deadline": "%s", "user_id": "%v"}`, time.Now().Add(expiresIn).Format(time.RFC3339), userId)),
-			wantStatus: http.StatusBadRequest,
+			wantStatus: http.StatusInternalServerError,
 			wantErr:    "Error creating goal",
 			setupHeaders: func(r *http.Request) {
 				r.Header.Set("Content-Type", "application/json")
@@ -498,7 +498,7 @@ Actual updated target:   %v
 			goalId:     goalId.String(),
 			target:     updatedTarget,
 			deadline:   updatedDeadline.Format(time.RFC3339),
-			wantStatus: http.StatusBadRequest,
+			wantStatus: http.StatusInternalServerError,
 			wantErr:    "error updating goal",
 			setupHeaders: func(t *testing.T, r *http.Request) {
 				r.Header.Set("Content-Type", "application/json")

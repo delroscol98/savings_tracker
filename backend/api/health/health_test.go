@@ -60,9 +60,9 @@ Actual status code:   %v
 	var body map[string]interface{}
 	json.NewDecoder(w.Body).Decode(&body)
 
-	if body["error"] != "Error pinging database: database down" {
+	if body["error"] != "Error pinging database" {
 		t.Errorf(`
-Expected error message: Error pinging database: database down
+Expected error message: Error pinging database
 Actual error message:   %v
 `, body["error"])
 	}

@@ -1,7 +1,9 @@
 package users
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -58,8 +60,7 @@ func (a *UsersConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http
 	tx, err := a.Database.BeginTx(r.Context(), nil)
 	if err != nil {
 		log.Print(err)
-		errMsg := fmt.Sprintf("Error creating db transaction: %s", err)
-		response.RespondWithError(w, http.StatusInternalServerError, errMsg)
+		response.RespondWithError(w, http.StatusInternalServerError, "Error creating db transaction")
 		return
 	}
 	defer tx.Rollback()
@@ -76,7 +77,7 @@ func (a *UsersConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http
 	token, err := auth.GenerateResetToken()
 	if err != nil {
 		log.Print(err)
-		response.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		response.RespondWithError(w, http.StatusInternalServerError, "Error generating reset token")
 		return
 	}
 	tokenHash := auth.HashToken(token)
@@ -95,8 +96,7 @@ func (a *UsersConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http
 	err = tx.Commit()
 	if err != nil {
 		log.Print(err)
-		errMsg := fmt.Sprintf("Error committing transaction: %s", err)
-		response.RespondWithError(w, http.StatusInternalServerError, errMsg)
+		response.RespondWithError(w, http.StatusInternalServerError, "Error committing transaction")
 		return
 	}
 
@@ -140,8 +140,17 @@ func (a *UsersConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 	hashToken := auth.HashToken(body.Token)
 
 	passwordResetToken, err := a.Queries.GetPasswordResetTokenByHash(r.Context(), hashToken)
-	if err != nil || time.Now().After(passwordResetToken.ExpiresAt) {
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			response.RespondWithError(w, http.StatusBadRequest, "Invalid or expired token")
+			return
+		}
 		log.Print(err)
+		response.RespondWithError(w, http.StatusInternalServerError, "Error looking up password reset token")
+		return
+	}
+
+	if time.Now().After(passwordResetToken.ExpiresAt) {
 		response.RespondWithError(w, http.StatusBadRequest, "Invalid or expired token")
 		return
 	}
@@ -154,7 +163,7 @@ func (a *UsersConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 	pwHash, err := auth.HashPassword(body.Password)
 	if err != nil {
 		log.Print(err)
-		response.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		response.RespondWithError(w, http.StatusInternalServerError, "Error hashing password")
 		return
 	}
 
@@ -162,8 +171,7 @@ func (a *UsersConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 	tx, err := a.Database.BeginTx(r.Context(), nil)
 	if err != nil {
 		log.Print(err)
-		errMsg := fmt.Sprintf("Error creating db transaction: %s", err)
-		response.RespondWithError(w, http.StatusInternalServerError, errMsg)
+		response.RespondWithError(w, http.StatusInternalServerError, "Error creating db transaction")
 		return
 	}
 	defer tx.Rollback()
@@ -176,14 +184,14 @@ func (a *UsersConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 	})
 	if err != nil {
 		log.Print(err)
-		response.RespondWithError(w, http.StatusBadRequest, "Error updating password")
+		response.RespondWithError(w, http.StatusInternalServerError, "Error updating password")
 		return
 	}
 
 	err = qtx.ConsumePasswordResetToken(r.Context(), passwordResetToken.ID)
 	if err != nil {
 		log.Print(err)
-		response.RespondWithError(w, http.StatusBadRequest, "Error consuming password reset token")
+		response.RespondWithError(w, http.StatusInternalServerError, "Error consuming password reset token")
 		return
 	}
 
@@ -191,8 +199,7 @@ func (a *UsersConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 	err = tx.Commit()
 	if err != nil {
 		log.Print(err)
-		errMsg := fmt.Sprintf("Error committing transaction: %s", err)
-		response.RespondWithError(w, http.StatusInternalServerError, errMsg)
+		response.RespondWithError(w, http.StatusInternalServerError, "Error committing transaction")
 		return
 	}
 
