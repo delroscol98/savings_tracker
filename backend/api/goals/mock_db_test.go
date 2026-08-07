@@ -2,7 +2,7 @@ package goals_test
 
 import (
 	"context"
-	"errors"
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -72,7 +72,7 @@ func (m *mockDB) GetGoalById(ctx context.Context, id uuid.UUID) (database.Goal, 
 
 	goal, ok := m.Goals[id.String()]
 	if !ok {
-		return database.Goal{}, errors.New("goal not found")
+		return database.Goal{}, sql.ErrNoRows
 	}
 
 	return goal, nil

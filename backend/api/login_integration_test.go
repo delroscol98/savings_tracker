@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,8 +11,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/delroscol98/savings_tracker/backend/api/users"
-	"github.com/delroscol98/savings_tracker/backend/internal/auth"
-	"github.com/delroscol98/savings_tracker/backend/internal/database"
 )
 
 func TestLoginHandler_Integration(t *testing.T) {
@@ -32,18 +29,7 @@ func TestLoginHandler_Integration(t *testing.T) {
 			wantStatus: http.StatusOK,
 			wantErr:    "",
 			seedDB: func(t *testing.T) {
-				hashedPw, err := auth.HashPassword("AnotherTestPassword")
-				if err != nil {
-					t.Fatalf("Failed to hash password: %v", err)
-				}
-
-				_, err = dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-1@example.com",
-					HashedPassword: hashedPw,
-				})
-				if err != nil {
-					t.Fatalf("Failed to seed new user: %v", err)
-				}
+				seedUserWithPassword(t, "foo-1@example.com", "AnotherTestPassword")
 			},
 		},
 		{
@@ -53,18 +39,7 @@ func TestLoginHandler_Integration(t *testing.T) {
 			wantStatus: http.StatusForbidden,
 			wantErr:    "Incorrect email or password",
 			seedDB: func(t *testing.T) {
-				hashedPw, err := auth.HashPassword("ThisIsATestPassword")
-				if err != nil {
-					t.Fatalf("Failed to hash password: %v", err)
-				}
-
-				_, err = dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-2@example.com",
-					HashedPassword: hashedPw,
-				})
-				if err != nil {
-					t.Fatalf("Failed to seed new user: %v", err)
-				}
+				seedUserWithPassword(t, "foo-2@example.com", "ThisIsATestPassword")
 			},
 		},
 		{
@@ -74,18 +49,7 @@ func TestLoginHandler_Integration(t *testing.T) {
 			wantStatus: http.StatusForbidden,
 			wantErr:    "Incorrect email or password",
 			seedDB: func(t *testing.T) {
-				hashedPw, err := auth.HashPassword("ThisIsATestPassword")
-				if err != nil {
-					t.Fatalf("Failed to hash password: %v", err)
-				}
-
-				_, err = dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "foo-4@example.com",
-					HashedPassword: hashedPw,
-				})
-				if err != nil {
-					t.Fatalf("Failed to seed new user: %v", err)
-				}
+				seedUserWithPassword(t, "foo-4@example.com", "ThisIsATestPassword")
 			},
 		},
 	}
@@ -130,18 +94,7 @@ Actual error:   %v
 }
 
 func TestLoginExpiresIn_Integration(t *testing.T) {
-	hashedPw, err := auth.HashPassword("AnotherTestPassword")
-	if err != nil {
-		t.Fatalf("Failed to hash password: %v", err)
-	}
-
-	_, err = dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-		Email:          "expiry-test@example.com",
-		HashedPassword: hashedPw,
-	})
-	if err != nil {
-		t.Fatalf("Failed to seed new user: %v", err)
-	}
+	seedUserWithPassword(t, "expiry-test@example.com", "AnotherTestPassword")
 
 	tests := []struct {
 		name      string

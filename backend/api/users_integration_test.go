@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,8 +10,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/delroscol98/savings_tracker/backend/api/users"
-	"github.com/delroscol98/savings_tracker/backend/internal/auth"
-	"github.com/delroscol98/savings_tracker/backend/internal/database"
 )
 
 func TestCreateUserHandler_Integration(t *testing.T) {
@@ -54,18 +51,7 @@ func TestCreateUserHandler_Integration(t *testing.T) {
 			wantStatus: http.StatusConflict,
 			wantErr:    "Email already exists",
 			seedDB: func(t *testing.T) {
-				hashedPw, err := auth.HashPassword("ThisIsATestPassword")
-				if err != nil {
-					t.Fatalf("Failed to hash password: %v", err)
-				}
-
-				_, err = dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-					Email:          "test2@example.com",
-					HashedPassword: hashedPw,
-				})
-				if err != nil {
-					t.Fatalf("Failed to seed new user: %v", err)
-				}
+				seedUser(t, "test2@example.com")
 			},
 			checkUser: nil,
 		},

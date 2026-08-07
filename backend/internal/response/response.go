@@ -37,8 +37,6 @@ func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 }
 
 func RespondWithError(w http.ResponseWriter, code int, msg string) {
-	log.Println(msg)
-
 	params := ErrorBody{
 		Error: msg,
 	}
@@ -47,7 +45,5 @@ func RespondWithError(w http.ResponseWriter, code int, msg string) {
 }
 
 func RespondWithValidationError(w http.ResponseWriter, code int, params ValidationErrorBody) {
-	log.Println(params.Error)
-
 	RespondWithJSON(w, code, params)
 }

@@ -63,7 +63,7 @@ func (a *UsersConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) 
 	hashedPW, err := auth.HashPassword(validatedParams.Password)
 	if err != nil {
 		log.Print(err)
-		response.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		response.RespondWithError(w, http.StatusInternalServerError, "Error hashing password")
 		return
 	}
 
@@ -81,7 +81,7 @@ func (a *UsersConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		log.Print(err)
-		response.RespondWithError(w, http.StatusBadRequest, "Error creating user")
+		response.RespondWithError(w, http.StatusInternalServerError, "Error creating user")
 		return
 	}
 

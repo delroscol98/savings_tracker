@@ -1,14 +1,10 @@
 package api_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strings"
 	"testing"
-
-	"github.com/delroscol98/savings_tracker/backend/internal/auth"
-	"github.com/delroscol98/savings_tracker/backend/internal/database"
 )
 
 func TestLoginRateLimit_Integration(t *testing.T) {
@@ -78,18 +74,7 @@ func TestLoginLockout_Integration(t *testing.T) {
 	testLoginRateLimiter.Reset()
 	testLoginThrottler.Reset()
 
-	hashedPw, err := auth.HashPassword("AnotherTestPassword")
-	if err != nil {
-		t.Fatalf("Failed to hash password: %v", err)
-	}
-
-	_, err = dbQueries.CreateUser(context.Background(), database.CreateUserParams{
-		Email:          "lockout@example.com",
-		HashedPassword: hashedPw,
-	})
-	if err != nil {
-		t.Fatalf("Failed to seed new user: %v", err)
-	}
+	seedUserWithPassword(t, "lockout@example.com", "AnotherTestPassword")
 
 	const attempts = 6
 	for i := 0; i < attempts; i++ {
