@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/netip"
 	"strings"
 	"time"
 
 	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
+	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
 )
 
@@ -37,13 +37,7 @@ func (a *UsersConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	ip := "unknown"
-	ipPort, err := netip.ParseAddrPort(r.RemoteAddr)
-	if err == nil {
-		ip = ipPort.Addr().String()
-	}
-
-	allowed := a.RateLimiter.Allow(ip)
+	allowed := a.PasswordResetRateLimiter.Allow(ratelimit.ClientIP(r))
 	if !allowed {
 		response.RespondWithError(w, http.StatusTooManyRequests, "Exceeded password reset limit")
 		return

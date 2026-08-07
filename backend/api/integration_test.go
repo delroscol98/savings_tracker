@@ -21,12 +21,14 @@ import (
 )
 
 var (
-	testServer      *httptest.Server
-	dbQueries       *database.Queries
-	testRateLimiter *ratelimit.RateLimiter
-	mockSender      *MockEmailSender
-	JWTSecret       string
-	baseURL         string
+	testServer                   *httptest.Server
+	dbQueries                    *database.Queries
+	testPasswordResetRateLimiter *ratelimit.RateLimiter
+	testLoginRateLimiter         *ratelimit.RateLimiter
+	testLoginThrottler           *ratelimit.LoginThrottler
+	mockSender                   *MockEmailSender
+	JWTSecret                    string
+	baseURL                      string
 )
 
 func TestMain(m *testing.M) {
@@ -105,7 +107,9 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Error executing up migration: %v", err)
 	}
 
-	testRateLimiter = ratelimit.New(5, 15*time.Minute)
+	testPasswordResetRateLimiter = ratelimit.New(5, 15*time.Minute)
+	testLoginRateLimiter = ratelimit.New(10, 15*time.Minute)
+	testLoginThrottler = ratelimit.NewLoginThrottler(5, 15*time.Minute)
 	dbQueries = database.New(db)
 
 	mockSender = &MockEmailSender{}
@@ -115,12 +119,14 @@ func TestMain(m *testing.M) {
 
 	baseURL = "https://localhost:8080"
 	usersAPI := &users.UsersConfig{
-		Queries:     dbQueries,
-		Database:    db,
-		RateLimiter: testRateLimiter,
-		EmailSender: mockSender,
-		JWTSecret:   JWTSecret,
-		BaseURL:     baseURL,
+		Queries:                  dbQueries,
+		Database:                 db,
+		PasswordResetRateLimiter: testPasswordResetRateLimiter,
+		LoginRateLimiter:         testLoginRateLimiter,
+		LoginThrottler:           testLoginThrottler,
+		EmailSender:              mockSender,
+		JWTSecret:                JWTSecret,
+		BaseURL:                  baseURL,
 	}
 	goalsAPI := &goals.GoalsConfig{
 		Queries: dbQueries,

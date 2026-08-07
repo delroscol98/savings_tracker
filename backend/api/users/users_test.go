@@ -13,6 +13,7 @@ import (
 	"github.com/delroscol98/savings_tracker/backend/api/users"
 	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
+	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
 	"github.com/google/uuid"
 )
 
@@ -262,7 +263,11 @@ func TestLoginHandler(t *testing.T) {
 				md := &mockDB{users: make(map[string]database.User)}
 				tt.setupMock(md)
 
-				api := users.UsersConfig{Queries: md}
+				api := users.UsersConfig{
+					Queries:          md,
+					LoginRateLimiter: ratelimit.New(10, time.Hour),
+					LoginThrottler:   ratelimit.NewLoginThrottler(5, time.Hour),
+				}
 				w := httptest.NewRecorder()
 				r := httptest.NewRequest(http.MethodPost, "/api/login", tt.body)
 				r.Header.Set("Content-Type", "application/json")

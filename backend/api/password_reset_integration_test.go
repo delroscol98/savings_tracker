@@ -19,7 +19,9 @@ func extractToken(t *testing.T, logOutput string) string {
 }
 
 func TestFullPasswordResetFlow_Integration(t *testing.T) {
-	testRateLimiter.Reset()
+	testPasswordResetRateLimiter.Reset()
+	testLoginRateLimiter.Reset()
+	testLoginThrottler.Reset()
 
 	// Create user
 	createUserBody := strings.NewReader(`

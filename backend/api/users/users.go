@@ -29,12 +29,14 @@ type Queries interface {
 }
 
 type UsersConfig struct {
-	Queries     Queries
-	Database    *sql.DB
-	RateLimiter *ratelimit.RateLimiter
-	EmailSender EmailSender
-	JWTSecret   string
-	BaseURL     string
+	Queries                  Queries
+	Database                 *sql.DB
+	PasswordResetRateLimiter *ratelimit.RateLimiter
+	LoginRateLimiter         *ratelimit.RateLimiter
+	LoginThrottler           *ratelimit.LoginThrottler
+	EmailSender              EmailSender
+	JWTSecret                string
+	BaseURL                  string
 }
 
 func (a *UsersConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -112,10 +114,21 @@ func (a *UsersConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !a.LoginRateLimiter.Allow(ratelimit.ClientIP(r)) {
+		response.RespondWithError(w, http.StatusTooManyRequests, "Too many login attempts")
+		return
+	}
+
+	if a.LoginThrottler.IsLockedOut(validatedParams.Email) {
+		response.RespondWithError(w, http.StatusTooManyRequests, "Too many failed login attempts")
+		return
+	}
+
 	user, err := a.Queries.Login(r.Context(), validatedParams.Email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Print(err)
+			a.LoginThrottler.RecordFailure(validatedParams.Email)
 			response.RespondWithError(w, http.StatusForbidden, "Incorrect email or password")
 			return
 		}
@@ -126,9 +139,12 @@ func (a *UsersConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	match, _ := auth.CheckPasswordHash(params.Password, user.HashedPassword)
 	if !match {
+		a.LoginThrottler.RecordFailure(validatedParams.Email)
 		response.RespondWithError(w, http.StatusForbidden, "Incorrect email or password")
 		return
 	}
+
+	a.LoginThrottler.Clear(validatedParams.Email)
 
 	token, err := auth.MakeJWT(user.ID, a.JWTSecret, time.Duration(validatedParams.ExpiresIn)*time.Second)
 	if err != nil {
