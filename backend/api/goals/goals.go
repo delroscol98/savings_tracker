@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
 	"github.com/google/uuid"
@@ -21,23 +20,13 @@ type Queries interface {
 }
 
 type GoalsConfig struct {
-	Queries   Queries
-	JWTSecret string
+	Queries Queries
 }
 
 func (a *GoalsConfig) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
-	// JWT validation
-	token, err := auth.GetBearerToken(r.Header)
-	if err != nil {
-		log.Print(err)
-		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	userId, err := auth.ValidateJWT(token, a.JWTSecret)
-	if err != nil {
-		log.Print(err)
-		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
+	userId, ok := r.Context().Value("userId").(uuid.UUID)
+	if !ok {
+		response.RespondWithError(w, http.StatusUnauthorized, "User not found")
 		return
 	}
 
@@ -62,18 +51,9 @@ func (a *GoalsConfig) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *GoalsConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) {
-	// JWT validation
-	token, err := auth.GetBearerToken(r.Header)
-	if err != nil {
-		log.Print(err)
-		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	userId, err := auth.ValidateJWT(token, a.JWTSecret)
-	if err != nil {
-		log.Print(err)
-		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
+	userId, ok := r.Context().Value("userId").(uuid.UUID)
+	if !ok {
+		response.RespondWithError(w, http.StatusUnauthorized, "User not found")
 		return
 	}
 
@@ -81,7 +61,7 @@ func (a *GoalsConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) 
 	params := CreateGoalParams{}
 
 	decoder := json.NewDecoder(r.Body)
-	err = decoder.Decode(&params)
+	err := decoder.Decode(&params)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusBadRequest, "Error decoding body")
@@ -123,18 +103,9 @@ func (a *GoalsConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (a *GoalsConfig) UpdateGoalHandler(w http.ResponseWriter, r *http.Request) {
-	// JWT validation
-	token, err := auth.GetBearerToken(r.Header)
-	if err != nil {
-		log.Print(err)
-		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	userId, err := auth.ValidateJWT(token, a.JWTSecret)
-	if err != nil {
-		log.Print(err)
-		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
+	userId, ok := r.Context().Value("userId").(uuid.UUID)
+	if !ok {
+		response.RespondWithError(w, http.StatusUnauthorized, "User not found")
 		return
 	}
 
@@ -199,18 +170,9 @@ func (a *GoalsConfig) UpdateGoalHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (a *GoalsConfig) DeleteGoalHandler(w http.ResponseWriter, r *http.Request) {
-	// JWT validation
-	token, err := auth.GetBearerToken(r.Header)
-	if err != nil {
-		log.Print(err)
-		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	userId, err := auth.ValidateJWT(token, a.JWTSecret)
-	if err != nil {
-		log.Print(err)
-		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
+	userId, ok := r.Context().Value("userId").(uuid.UUID)
+	if !ok {
+		response.RespondWithError(w, http.StatusUnauthorized, "User not found")
 		return
 	}
 
