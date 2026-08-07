@@ -1,4 +1,4 @@
-package auth
+package users
 
 import (
 	"time"
@@ -22,9 +22,9 @@ type CreateUserParams struct {
 }
 
 type LoginParams struct {
-	Email     string        `json:"email"`
-	Password  string        `json:"password"`
-	ExpiresIn int64 `json:"expires_in"` // seconds
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	ExpiresIn int64  `json:"expires_in"` // seconds
 }
 
 type requestPasswordResetBody struct {

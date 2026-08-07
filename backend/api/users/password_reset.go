@@ -1,4 +1,4 @@
-package auth
+package users
 
 import (
 	"encoding/json"
@@ -9,11 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
 )
 
-func (a *AuthConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.Request) {
+func (a *UsersConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.Request) {
 	body := requestPasswordResetBody{}
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&body)
@@ -26,7 +27,7 @@ func (a *AuthConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.
 	// Email validation
 	fieldsErrors := make(response.FieldErrors)
 	body.Email = strings.ToLower(strings.TrimSpace(body.Email))
-	body.Email, fieldsErrors = ValidateEmail(body.Email, fieldsErrors)
+	body.Email, fieldsErrors = auth.ValidateEmail(body.Email, fieldsErrors)
 	if len(fieldsErrors) != 0 {
 		log.Print(fieldsErrors)
 		response.RespondWithValidationError(w, http.StatusBadRequest, response.ValidationErrorBody{
@@ -78,13 +79,13 @@ func (a *AuthConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	token, err := GenerateResetToken()
+	token, err := auth.GenerateResetToken()
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	tokenHash := HashToken(token)
+	tokenHash := auth.HashToken(token)
 
 	_, err = qtx.CreatePasswordResetToken(r.Context(), database.CreatePasswordResetTokenParams{
 		UserID:    user.ID,
@@ -122,7 +123,7 @@ func (a *AuthConfig) RequestPasswordResetHandler(w http.ResponseWriter, r *http.
 	})
 }
 
-func (a *AuthConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+func (a *UsersConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	body := ResetPasswordParams{}
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&body)
@@ -142,7 +143,7 @@ func (a *AuthConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	hashToken := HashToken(body.Token)
+	hashToken := auth.HashToken(body.Token)
 
 	passwordResetToken, err := a.Queries.GetPasswordResetTokenByHash(r.Context(), hashToken)
 	if err != nil || time.Now().After(passwordResetToken.ExpiresAt) {
@@ -156,7 +157,7 @@ func (a *AuthConfig) ResetPasswordHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	pwHash, err := HashPassword(body.Password)
+	pwHash, err := auth.HashPassword(body.Password)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusInternalServerError, err.Error())

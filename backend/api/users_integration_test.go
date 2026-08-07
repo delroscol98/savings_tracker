@@ -10,7 +10,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/delroscol98/savings_tracker/backend/api/auth"
+	"github.com/delroscol98/savings_tracker/backend/api/users"
+	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 )
 
@@ -23,7 +24,7 @@ func TestCreateUserHandler_Integration(t *testing.T) {
 		wantStatus int
 		wantErr    string
 		seedDB     func(*testing.T)
-		checkUser  func(t *testing.T, u *auth.User)
+		checkUser  func(t *testing.T, u *users.User)
 	}{
 		{
 			name:       "valid user",
@@ -33,7 +34,7 @@ func TestCreateUserHandler_Integration(t *testing.T) {
 			wantStatus: http.StatusCreated,
 			wantErr:    "",
 			seedDB:     func(t *testing.T) {},
-			checkUser: func(t *testing.T, u *auth.User) {
+			checkUser: func(t *testing.T, u *users.User) {
 				if u.Id == uuid.Nil {
 					t.Error("User ID should not be zero-value")
 				}
@@ -164,7 +165,7 @@ Actual error:   %v
 			}
 
 			if tt.checkUser != nil {
-				user := auth.User{}
+				user := users.User{}
 				decoder := json.NewDecoder(resp.Body)
 				err := decoder.Decode(&user)
 				if err != nil {

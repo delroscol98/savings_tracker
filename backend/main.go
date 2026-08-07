@@ -11,8 +11,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/delroscol98/savings_tracker/backend/api/auth"
+	"github.com/delroscol98/savings_tracker/backend/api/goals"
 	"github.com/delroscol98/savings_tracker/backend/api/health"
+	"github.com/delroscol98/savings_tracker/backend/api/users"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/delroscol98/savings_tracker/backend/internal/middleware"
 	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
@@ -44,7 +45,7 @@ func main() {
 	// Resend
 	resendApiKey := os.Getenv("RESEND_API_KEY")
 	fromEmail := os.Getenv("FROM_EMAIL")
-	resendSender := auth.ResendSender{
+	resendSender := users.ResendSender{
 		Client: resend.NewClient(resendApiKey),
 		From:   fromEmail,
 	}
@@ -59,13 +60,17 @@ func main() {
 	}
 
 	// API setup
-	authApi := &auth.AuthConfig{
+	usersAPI := &users.UsersConfig{
 		Queries:     dbQueries,
 		RateLimiter: ratelimit.New(5, 15*time.Minute),
 		Database:    db,
 		EmailSender: &resendSender,
 		JWTSecret:   secret,
 		BaseURL:     baseURL,
+	}
+	goalsAPI := &goals.GoalsConfig{
+		Queries:   dbQueries,
+		JWTSecret: secret,
 	}
 	healthApi := &health.HealthConfig{
 		Queries: dbQueries,
@@ -75,18 +80,20 @@ func main() {
 	serveMux := http.NewServeMux()
 	serveMux.Handle("GET /app", http.StripPrefix("/app", middleware.MetricInc(&serverHits, http.FileServer(http.Dir(ROOTDIR)))))
 
-	// USERS
+	// HEALTH
 	serveMux.Handle("GET /health", middleware.Log(http.HandlerFunc(healthApi.CheckHealthHandler)))
-	serveMux.Handle("POST /api/users", middleware.Log(http.HandlerFunc(authApi.CreateUserHandler)))
-	serveMux.Handle("POST /api/login", middleware.Log(http.HandlerFunc(authApi.LoginUserHandler)))
-	serveMux.Handle("POST /api/forgot-password", middleware.Log(http.HandlerFunc(authApi.RequestPasswordResetHandler)))
-	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(authApi.ResetPasswordHandler)))
+
+	// USERS
+	serveMux.Handle("POST /api/users", middleware.Log(http.HandlerFunc(usersAPI.CreateUserHandler)))
+	serveMux.Handle("POST /api/login", middleware.Log(http.HandlerFunc(usersAPI.LoginUserHandler)))
+	serveMux.Handle("POST /api/forgot-password", middleware.Log(http.HandlerFunc(usersAPI.RequestPasswordResetHandler)))
+	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(usersAPI.ResetPasswordHandler)))
 
 	// GOALS
-	serveMux.Handle("GET /api/goals", middleware.Log(http.HandlerFunc(authApi.GetGoalsHandler)))
-	serveMux.Handle("POST /api/goals", middleware.Log(http.HandlerFunc(authApi.CreateGoalHandler)))
-	serveMux.Handle("PUT /api/goals/{goalId}", middleware.Log(http.HandlerFunc(authApi.UpdateGoalHandler)))
-	serveMux.Handle("DELETE /api/goals/{goalId}", middleware.Log(http.HandlerFunc(authApi.DeleteGoalHandler)))
+	serveMux.Handle("GET /api/goals", middleware.Log(http.HandlerFunc(goalsAPI.GetGoalsHandler)))
+	serveMux.Handle("POST /api/goals", middleware.Log(http.HandlerFunc(goalsAPI.CreateGoalHandler)))
+	serveMux.Handle("PUT /api/goals/{goalId}", middleware.Log(http.HandlerFunc(goalsAPI.UpdateGoalHandler)))
+	serveMux.Handle("DELETE /api/goals/{goalId}", middleware.Log(http.HandlerFunc(goalsAPI.DeleteGoalHandler)))
 
 	// START THE SERVER
 	server := http.Server{

@@ -11,7 +11,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	"github.com/delroscol98/savings_tracker/backend/api/auth"
+	"github.com/delroscol98/savings_tracker/backend/api/users"
+	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 )
 
@@ -175,7 +176,7 @@ Actual status code:   %v
 `, http.StatusOK, resp.StatusCode)
 			}
 
-			var user auth.User
+			var user users.User
 			decoder := json.NewDecoder(resp.Body)
 			err = decoder.Decode(&user)
 			if err != nil {

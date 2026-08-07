@@ -1,4 +1,4 @@
-package auth_test
+package goals_test
 
 import (
 	"encoding/json"
@@ -14,7 +14,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 
-	"github.com/delroscol98/savings_tracker/backend/api/auth"
+	"github.com/delroscol98/savings_tracker/backend/api/goals"
+	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 )
 
@@ -40,7 +41,7 @@ func TestGetGoalsHandler(t *testing.T) {
 		wantErr      string
 		setupHeaders func(*http.Request)
 		seedDB       func(*mockDB)
-		checkGoals   func(*testing.T, []auth.Goal)
+		checkGoals   func(*testing.T, []goals.Goal)
 	}{
 		{
 			name:       "valid goals",
@@ -67,7 +68,7 @@ func TestGetGoalsHandler(t *testing.T) {
 				md.Goals[goalId1.String()] = goal1
 				md.Goals[goalId2.String()] = goal2
 			},
-			checkGoals: func(t *testing.T, goals []auth.Goal) {
+			checkGoals: func(t *testing.T, goals []goals.Goal) {
 				if len(goals) != 2 {
 					t.Errorf("want %v goals, got %v", 2, len(goals))
 				}
@@ -109,7 +110,7 @@ func TestGetGoalsHandler(t *testing.T) {
 				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 			},
 			seedDB: func(md *mockDB) {},
-			checkGoals: func(t *testing.T, goals []auth.Goal) {
+			checkGoals: func(t *testing.T, goals []goals.Goal) {
 				if len(goals) != 0 {
 					t.Errorf("want %v goals, got %v", 0, len(goals))
 				}
@@ -134,7 +135,7 @@ func TestGetGoalsHandler(t *testing.T) {
 
 				md.Goals[goalId1.String()] = goal1
 			},
-			checkGoals: func(t *testing.T, goals []auth.Goal) {
+			checkGoals: func(t *testing.T, goals []goals.Goal) {
 				if len(goals) != 0 {
 					t.Errorf("want %v goals, got %v", 0, len(goals))
 				}
@@ -201,7 +202,7 @@ func TestGetGoalsHandler(t *testing.T) {
 			}
 			tt.seedDB(md)
 
-			api := auth.AuthConfig{Queries: md}
+			api := goals.GoalsConfig{Queries: md}
 			api.JWTSecret = tokenSecret
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest(http.MethodGet, "/api/goals", nil)
@@ -233,7 +234,7 @@ Actual status code:   %v
 					}
 				}
 
-				var goals []auth.Goal
+				var goals []goals.Goal
 				if err := json.NewDecoder(w.Body).Decode(&goals); err != nil {
 					t.Fatalf("failed to decode goals: %v", err)
 				}
@@ -345,7 +346,7 @@ func TestCreateGoalHandler(t *testing.T) {
 			}
 			tt.setupMock(md)
 
-			api := auth.AuthConfig{Queries: md}
+			api := goals.GoalsConfig{Queries: md}
 			api.JWTSecret = tokenSecret
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest(http.MethodPost, "/api/goals", tt.body)
@@ -401,7 +402,7 @@ func TestUpdateGoalHandler(t *testing.T) {
 		wantErr      string
 		setupHeaders func(*testing.T, *http.Request)
 		seedDB       func(*mockDB)
-		checkGoal    func(*testing.T, auth.Goal)
+		checkGoal    func(*testing.T, goals.Goal)
 	}{
 		{
 			name:       "valid update",
@@ -424,7 +425,7 @@ func TestUpdateGoalHandler(t *testing.T) {
 
 				md.Goals[goalId.String()] = goal
 			},
-			checkGoal: func(t *testing.T, g auth.Goal) {
+			checkGoal: func(t *testing.T, g goals.Goal) {
 				// check updated target
 				if g.Target != updatedTarget {
 					t.Errorf(`
@@ -694,7 +695,7 @@ Actual updated target:   %v
 				Goals: make(map[string]database.Goal),
 			}
 			tt.seedDB(&md)
-			api := auth.AuthConfig{Queries: &md}
+			api := goals.GoalsConfig{Queries: &md}
 			api.JWTSecret = tokenSecret
 			body := tt.body
 			if body == "" {
@@ -729,7 +730,7 @@ Actual status code:   %v
 			}
 
 			if tt.checkGoal != nil {
-				var goal auth.Goal
+				var goal goals.Goal
 				if err := json.NewDecoder(w.Body).Decode(&goal); err != nil {
 					t.Fatalf("failed to decode goal: %v", err)
 				}
@@ -843,7 +844,7 @@ func TestDeleteGoalHandler(t *testing.T) {
 				Goals: make(map[string]database.Goal),
 			}
 			tt.seedDB(md)
-			api := auth.AuthConfig{Queries: md}
+			api := goals.GoalsConfig{Queries: md}
 			api.JWTSecret = tokenSecret
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/goals/%v", tt.goalId), nil)
