@@ -62,12 +62,14 @@ func main() {
 
 	// API setup
 	usersAPI := &users.UsersConfig{
-		Queries:     dbQueries,
-		RateLimiter: ratelimit.New(5, 15*time.Minute),
-		Database:    db,
-		EmailSender: &resendSender,
-		JWTSecret:   secret,
-		BaseURL:     baseURL,
+		Queries:                  dbQueries,
+		PasswordResetRateLimiter: ratelimit.New(5, 15*time.Minute),
+		LoginRateLimiter:         ratelimit.New(10, 15*time.Minute),
+		LoginThrottler:           ratelimit.NewLoginThrottler(5, 15*time.Minute),
+		Database:                 db,
+		EmailSender:              &resendSender,
+		JWTSecret:                secret,
+		BaseURL:                  baseURL,
 	}
 	goalsAPI := &goals.GoalsConfig{
 		Queries: dbQueries,

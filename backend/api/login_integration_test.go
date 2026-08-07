@@ -92,6 +92,9 @@ func TestLoginHandler_Integration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			testLoginRateLimiter.Reset()
+			testLoginThrottler.Reset()
+
 			tt.seedDB(t)
 
 			params := strings.NewReader(fmt.Sprintf(`{"email": "%v", "password": "%v"}`, tt.email, tt.password))
@@ -162,6 +165,9 @@ func TestLoginExpiresIn_Integration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			testLoginRateLimiter.Reset()
+			testLoginThrottler.Reset()
+
 			params := strings.NewReader(fmt.Sprintf(`{"email": "expiry-test@example.com", "password": "AnotherTestPassword", "expires_in": %v}`, tt.expiresIn))
 			resp, err := http.Post(testServer.URL+"/api/login", "application/json", params)
 			if err != nil {
