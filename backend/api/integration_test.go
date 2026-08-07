@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"log"
-	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
@@ -14,8 +13,8 @@ import (
 	"github.com/delroscol98/savings_tracker/backend/api/health"
 	"github.com/delroscol98/savings_tracker/backend/api/users"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
-	"github.com/delroscol98/savings_tracker/backend/internal/middleware"
 	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
+	"github.com/delroscol98/savings_tracker/backend/internal/router"
 	"github.com/joho/godotenv"
 
 	_ "github.com/lib/pq"
@@ -130,21 +129,11 @@ func TestMain(m *testing.M) {
 		Queries: dbQueries,
 	}
 
-	// SERVER MULTIPLEXER
-	serveMux := http.NewServeMux()
-	serveMux.Handle("GET /health", middleware.Log(http.HandlerFunc(healthApi.CheckHealthHandler)))
-
-	serveMux.Handle("POST /api/users", middleware.Log(http.HandlerFunc(usersAPI.CreateUserHandler)))
-	serveMux.Handle("POST /api/login", middleware.Log(http.HandlerFunc(usersAPI.LoginUserHandler)))
-	serveMux.Handle("POST /api/forgot-password", middleware.Log(http.HandlerFunc(usersAPI.RequestPasswordResetHandler)))
-	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(usersAPI.ResetPasswordHandler)))
-
-	serveMux.Handle("GET /api/goals", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.GetGoalsHandler))))
-	serveMux.Handle("POST /api/goals", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.CreateGoalHandler))))
-	serveMux.Handle("PUT /api/goals/{goalId}", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.UpdateGoalHandler))))
-	serveMux.Handle("DELETE /api/goals/{goalId}", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.DeleteGoalHandler))))
-
-	testServer = httptest.NewServer(serveMux)
+	testServer = httptest.NewServer(router.NewRouter(router.Dependencies{
+		Users:  usersAPI,
+		Goals:  goalsAPI,
+		Health: healthApi,
+	}))
 
 	code := m.Run()
 	_, err = db.Exec(string(downMigration005))

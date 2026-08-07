@@ -17,6 +17,7 @@ import (
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/delroscol98/savings_tracker/backend/internal/middleware"
 	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
+	"github.com/delroscol98/savings_tracker/backend/internal/router"
 	"github.com/joho/godotenv"
 	"github.com/resend/resend-go/v3"
 
@@ -76,23 +77,12 @@ func main() {
 	}
 
 	// SERVER MULTIPLEXER
-	serveMux := http.NewServeMux()
+	serveMux := router.NewRouter(router.Dependencies{
+		Users:  usersAPI,
+		Goals:  goalsAPI,
+		Health: healthApi,
+	})
 	serveMux.Handle("GET /app", http.StripPrefix("/app", middleware.MetricInc(&serverHits, http.FileServer(http.Dir(ROOTDIR)))))
-
-	// HEALTH
-	serveMux.Handle("GET /health", middleware.Log(http.HandlerFunc(healthApi.CheckHealthHandler)))
-
-	// USERS
-	serveMux.Handle("POST /api/users", middleware.Log(http.HandlerFunc(usersAPI.CreateUserHandler)))
-	serveMux.Handle("POST /api/login", middleware.Log(http.HandlerFunc(usersAPI.LoginUserHandler)))
-	serveMux.Handle("POST /api/forgot-password", middleware.Log(http.HandlerFunc(usersAPI.RequestPasswordResetHandler)))
-	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(usersAPI.ResetPasswordHandler)))
-
-	// GOALS
-	serveMux.Handle("GET /api/goals", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.GetGoalsHandler))))
-	serveMux.Handle("POST /api/goals", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.CreateGoalHandler))))
-	serveMux.Handle("PUT /api/goals/{goalId}", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.UpdateGoalHandler))))
-	serveMux.Handle("DELETE /api/goals/{goalId}", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.DeleteGoalHandler))))
 
 	// START THE SERVER
 	server := http.Server{
