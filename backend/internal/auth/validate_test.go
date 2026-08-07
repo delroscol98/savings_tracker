@@ -4,7 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/delroscol98/savings_tracker/backend/api/auth"
+	"github.com/delroscol98/savings_tracker/backend/api/goals"
+	"github.com/delroscol98/savings_tracker/backend/api/users"
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
 	"github.com/google/go-cmp/cmp"
 )
@@ -12,12 +13,12 @@ import (
 func TestValidateCreateUserParams(t *testing.T) {
 	tests := []struct {
 		name        string
-		params      auth.CreateUserParams
+		params      users.CreateUserParams
 		fieldErrors response.FieldErrors
 	}{
 		{
 			name: "valid params",
-			params: auth.CreateUserParams{
+			params: users.CreateUserParams{
 				Email:    "test@example.com",
 				Password: "ThisIsATestPassword",
 				FullName: "John Smith",
@@ -26,7 +27,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "valid params with name and address",
-			params: auth.CreateUserParams{
+			params: users.CreateUserParams{
 				Email:    "Test <test@example.com>",
 				Password: "ThisIsATestPassword",
 				FullName: "John Smith",
@@ -35,7 +36,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "empty email",
-			params: auth.CreateUserParams{
+			params: users.CreateUserParams{
 				Email:    "",
 				Password: "ThisIsATestPassword",
 				FullName: "John Smith",
@@ -46,7 +47,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "invalid email and common password",
-			params: auth.CreateUserParams{
+			params: users.CreateUserParams{
 				Email:    "invalidemail",
 				Password: "ThisIsATestPassword",
 				FullName: "John Smith",
@@ -57,7 +58,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "empty password",
-			params: auth.CreateUserParams{
+			params: users.CreateUserParams{
 				Email:    "test@example.com",
 				Password: "",
 				FullName: "John Smith",
@@ -68,7 +69,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "too short password and common password",
-			params: auth.CreateUserParams{
+			params: users.CreateUserParams{
 				Email:    "test@example.com",
 				Password: "test",
 				FullName: "John Smith",
@@ -79,7 +80,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "too long password",
-			params: auth.CreateUserParams{
+			params: users.CreateUserParams{
 				Email:    "test@example.com",
 				Password: "ThisPasswordIsLongerThan128CharactersSoThatWeCanTestThatOurSystemHandlesItProperlyWithoutAnyIssuesOrUnexpectedBehaviorWhenCreatingAUserWithThisVeryLongPassword1234567890",
 				FullName: "John Smith",
@@ -90,7 +91,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 		},
 		{
 			name: "Empty name",
-			params: auth.CreateUserParams{
+			params: users.CreateUserParams{
 				Email:    "test@example.com",
 				Password: "ThisIsATestPassword",
 				FullName: "",
@@ -103,7 +104,7 @@ func TestValidateCreateUserParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, fieldErrors := auth.ValidateCreateUserParams(tt.params)
+			_, fieldErrors := users.ValidateCreateUserParams(tt.params)
 			if !cmp.Equal(fieldErrors, tt.fieldErrors) {
 				t.Errorf("FieldErrors structs do not match:\n%v", cmp.Diff(fieldErrors, tt.fieldErrors))
 			}
@@ -114,13 +115,13 @@ func TestValidateCreateUserParams(t *testing.T) {
 func TestValidateLoginParams(t *testing.T) {
 	tests := []struct {
 		name        string
-		params      auth.LoginParams
-		wantParams  *auth.LoginParams
+		params      users.LoginParams
+		wantParams  *users.LoginParams
 		fieldErrors response.FieldErrors
 	}{
 		{
 			name: "valid params",
-			params: auth.LoginParams{
+			params: users.LoginParams{
 				Email:    "test@example.com",
 				Password: "ThisIsATestPassword",
 			},
@@ -128,20 +129,20 @@ func TestValidateLoginParams(t *testing.T) {
 		},
 		{
 			name: "default expires_in applied",
-			params: auth.LoginParams{
+			params: users.LoginParams{
 				Email:    "test@example.com",
 				Password: "ThisIsATestPassword",
 			},
-			wantParams: &auth.LoginParams{
+			wantParams: &users.LoginParams{
 				Email:     "test@example.com",
 				Password:  "ThisIsATestPassword",
-				ExpiresIn: auth.DEFAULT_LOGIN_EXPIRY_SECONDS,
+				ExpiresIn: users.DEFAULT_LOGIN_EXPIRY_SECONDS,
 			},
 			fieldErrors: nil,
 		},
 		{
 			name: "negative expires_in",
-			params: auth.LoginParams{
+			params: users.LoginParams{
 				Email:     "test@example.com",
 				Password:  "ThisIsATestPassword",
 				ExpiresIn: -1,
@@ -152,7 +153,7 @@ func TestValidateLoginParams(t *testing.T) {
 		},
 		{
 			name: "empty email",
-			params: auth.LoginParams{
+			params: users.LoginParams{
 				Email:    "",
 				Password: "ThisIsATestPassword",
 			},
@@ -162,7 +163,7 @@ func TestValidateLoginParams(t *testing.T) {
 		},
 		{
 			name: "invalid email",
-			params: auth.LoginParams{
+			params: users.LoginParams{
 				Email:    "invalidemail",
 				Password: "ThisIsATestPassword",
 			},
@@ -172,7 +173,7 @@ func TestValidateLoginParams(t *testing.T) {
 		},
 		{
 			name: "empty password",
-			params: auth.LoginParams{
+			params: users.LoginParams{
 				Email:    "test@example.com",
 				Password: "",
 			},
@@ -184,7 +185,7 @@ func TestValidateLoginParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotParams, fieldErrors := auth.ValidateLoginParams(tt.params)
+			gotParams, fieldErrors := users.ValidateLoginParams(tt.params)
 			if !cmp.Equal(fieldErrors, tt.fieldErrors) {
 				t.Errorf("FieldErrors structs do not match:\n%v", cmp.Diff(fieldErrors, tt.fieldErrors))
 			}
@@ -198,12 +199,12 @@ func TestValidateLoginParams(t *testing.T) {
 func TestValidateGoalParams(t *testing.T) {
 	tests := []struct {
 		name        string
-		params      auth.GoalFields
+		params      goals.GoalFields
 		fieldErrors response.FieldErrors
 	}{
 		{
 			name: "Valid Params",
-			params: auth.GoalFields{
+			params: goals.GoalFields{
 				Target:   1000,
 				Deadline: time.Now().Add(time.Hour),
 			},
@@ -211,7 +212,7 @@ func TestValidateGoalParams(t *testing.T) {
 		},
 		{
 			name: "Invalid target",
-			params: auth.GoalFields{
+			params: goals.GoalFields{
 				Target:   -1000,
 				Deadline: time.Now().Add(time.Hour),
 			},
@@ -221,7 +222,7 @@ func TestValidateGoalParams(t *testing.T) {
 		},
 		{
 			name: "Invalid deadline",
-			params: auth.GoalFields{
+			params: goals.GoalFields{
 				Target:   1000,
 				Deadline: time.Date(2000, time.January, 0, 0, 0, 0, 0, time.UTC),
 			},
@@ -233,7 +234,7 @@ func TestValidateGoalParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fieldErrors := auth.ValidateGoalParams(tt.params)
+			fieldErrors := goals.ValidateGoalParams(tt.params)
 			if !cmp.Equal(fieldErrors, tt.fieldErrors) {
 				t.Errorf("FieldErrors structs do not match:\n%v", cmp.Diff(fieldErrors, tt.fieldErrors))
 			}

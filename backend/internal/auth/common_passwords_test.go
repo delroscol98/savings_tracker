@@ -3,7 +3,7 @@ package auth_test
 import (
 	"testing"
 
-	"github.com/delroscol98/savings_tracker/backend/api/auth"
+	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 )
 
 func TestIsCommonPassword(t *testing.T) {

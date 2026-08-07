@@ -1,6 +1,7 @@
-package auth
+package users
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -8,13 +9,35 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
+	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
-
+	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
 
-func (a *AuthConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
+type Queries interface {
+	CreateUser(ctx context.Context, params database.CreateUserParams) (database.User, error)
+	GetUserByEmail(ctx context.Context, email string) (database.GetUserByEmailRow, error)
+	Login(ctx context.Context, email string) (database.User, error)
+	CreatePasswordResetToken(ctx context.Context, params database.CreatePasswordResetTokenParams) (database.PasswordResetToken, error)
+	GetPasswordResetTokenByHash(ctx context.Context, tokenHash string) (database.PasswordResetToken, error)
+	ConsumePasswordResetToken(ctx context.Context, id uuid.UUID) error
+	DeactivateUserTokens(ctx context.Context, userID uuid.UUID) error
+	UpdateUserPassword(ctx context.Context, params database.UpdateUserPasswordParams) error
+}
+
+type UsersConfig struct {
+	Queries     Queries
+	Database    *sql.DB
+	RateLimiter *ratelimit.RateLimiter
+	EmailSender EmailSender
+	JWTSecret   string
+	BaseURL     string
+}
+
+func (a *UsersConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	params := CreateUserParams{}
 
 	decoder := json.NewDecoder(r.Body)
@@ -35,7 +58,7 @@ func (a *AuthConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashedPW, err := HashPassword(validatedParams.Password)
+	hashedPW, err := auth.HashPassword(validatedParams.Password)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusInternalServerError, err.Error())
@@ -70,7 +93,7 @@ func (a *AuthConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
-func (a *AuthConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
+func (a *UsersConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	params := LoginParams{}
 
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
@@ -101,13 +124,13 @@ func (a *AuthConfig) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	match, _ := CheckPasswordHash(params.Password, user.HashedPassword)
+	match, _ := auth.CheckPasswordHash(params.Password, user.HashedPassword)
 	if !match {
 		response.RespondWithError(w, http.StatusForbidden, "Incorrect email or password")
 		return
 	}
 
-	token, err := MakeJWT(user.ID, a.JWTSecret, time.Duration(validatedParams.ExpiresIn)*time.Second)
+	token, err := auth.MakeJWT(user.ID, a.JWTSecret, time.Duration(validatedParams.ExpiresIn)*time.Second)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusInternalServerError, "Error creating JWT token")

@@ -1,25 +1,40 @@
-package auth
+package goals
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 
+	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
 	"github.com/google/uuid"
 )
 
-func (a *AuthConfig) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
+type Queries interface {
+	GetGoals(ctx context.Context, userID uuid.UUID) ([]database.Goal, error)
+	CreateGoal(ctx context.Context, arg database.CreateGoalParams) (database.Goal, error)
+	GetGoalById(ctx context.Context, id uuid.UUID) (database.Goal, error)
+	UpdateGoal(ctx context.Context, arg database.UpdateGoalParams) (database.Goal, error)
+	DeleteGoal(ctx context.Context, arg database.DeleteGoalParams) error
+}
+
+type GoalsConfig struct {
+	Queries   Queries
+	JWTSecret string
+}
+
+func (a *GoalsConfig) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	// JWT validation
-	token, err := GetBearerToken(r.Header)
+	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	userId, err := ValidateJWT(token, a.JWTSecret)
+	userId, err := auth.ValidateJWT(token, a.JWTSecret)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
@@ -46,16 +61,16 @@ func (a *AuthConfig) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	response.RespondWithJSON(w, http.StatusOK, goals)
 }
 
-func (a *AuthConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) {
+func (a *GoalsConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) {
 	// JWT validation
-	token, err := GetBearerToken(r.Header)
+	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	userId, err := ValidateJWT(token, a.JWTSecret)
+	userId, err := auth.ValidateJWT(token, a.JWTSecret)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
@@ -107,16 +122,16 @@ func (a *AuthConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *AuthConfig) UpdateGoalHandler(w http.ResponseWriter, r *http.Request) {
+func (a *GoalsConfig) UpdateGoalHandler(w http.ResponseWriter, r *http.Request) {
 	// JWT validation
-	token, err := GetBearerToken(r.Header)
+	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	userId, err := ValidateJWT(token, a.JWTSecret)
+	userId, err := auth.ValidateJWT(token, a.JWTSecret)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
@@ -183,16 +198,16 @@ func (a *AuthConfig) UpdateGoalHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *AuthConfig) DeleteGoalHandler(w http.ResponseWriter, r *http.Request) {
+func (a *GoalsConfig) DeleteGoalHandler(w http.ResponseWriter, r *http.Request) {
 	// JWT validation
-	token, err := GetBearerToken(r.Header)
+	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	userId, err := ValidateJWT(token, a.JWTSecret)
+	userId, err := auth.ValidateJWT(token, a.JWTSecret)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusUnauthorized, err.Error())

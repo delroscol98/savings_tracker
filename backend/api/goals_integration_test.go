@@ -11,7 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/delroscol98/savings_tracker/backend/api/auth"
+	"github.com/delroscol98/savings_tracker/backend/api/goals"
+	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -27,7 +28,7 @@ func TestGetGoalsHandler_Integration(t *testing.T) {
 		wantErr      string
 		seedDB       func(*testing.T) (database.User, database.Goal)
 		setupHeaders func(database.User, *http.Request)
-		checkGoals   func(*testing.T, []auth.Goal, database.User, database.Goal)
+		checkGoals   func(*testing.T, []goals.Goal, database.User, database.Goal)
 	}{
 		{
 			name:       "valid goals",
@@ -61,7 +62,7 @@ func TestGetGoalsHandler_Integration(t *testing.T) {
 				r.Header.Set("Content-Type", "application/json")
 				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
 			},
-			checkGoals: func(t *testing.T, goals []auth.Goal, user database.User, goal database.Goal) {
+			checkGoals: func(t *testing.T, goals []goals.Goal, user database.User, goal database.Goal) {
 				found := false
 				for _, g := range goals {
 					if g.Id == goal.ID {
@@ -114,7 +115,7 @@ func TestGetGoalsHandler_Integration(t *testing.T) {
 				r.Header.Set("Content-Type", "application/json")
 				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
 			},
-			checkGoals: func(t *testing.T, goals []auth.Goal, user database.User, goal database.Goal) {
+			checkGoals: func(t *testing.T, goals []goals.Goal, user database.User, goal database.Goal) {
 				if len(goals) != 0 {
 					t.Errorf("want %v goals, got %v", 0, len(goals))
 				}
@@ -225,7 +226,7 @@ Actual error:   %v
 				return
 			}
 
-			var goals []auth.Goal
+			var goals []goals.Goal
 			decoder := json.NewDecoder(resp.Body)
 			err = decoder.Decode(&goals)
 			if err != nil {
@@ -264,7 +265,7 @@ func TestCreateGoalHandler_Integration(t *testing.T) {
 		wantStatus   int
 		wantErr      string
 		setupHeaders func(*http.Request)
-		checkGoal    func(*testing.T, *auth.Goal)
+		checkGoal    func(*testing.T, *goals.Goal)
 	}{
 		{
 			name:       "valid goal",
@@ -279,7 +280,7 @@ func TestCreateGoalHandler_Integration(t *testing.T) {
 				r.Header.Set("Content-Type", "application/json")
 				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
 			},
-			checkGoal: func(t *testing.T, g *auth.Goal) {
+			checkGoal: func(t *testing.T, g *goals.Goal) {
 				if g.Id == uuid.Nil {
 					t.Error("Goal ID should not be zero-value")
 				}
@@ -376,7 +377,7 @@ Actual error:   %v
 			}
 
 			if tt.checkGoal != nil {
-				goal := auth.Goal{}
+				goal := goals.Goal{}
 				decoder := json.NewDecoder(resp.Body)
 				err := decoder.Decode(&goal)
 				if err != nil {
@@ -698,7 +699,7 @@ func TestUpdateGoalHandler_Integration(t *testing.T) {
 		seedDB       func(*testing.T) (database.User, database.Goal)
 		setupRequest func(database.Goal, *testing.T) *http.Request
 		setupHeaders func(database.User, *http.Request)
-		checkGoal    func(*testing.T, auth.Goal)
+		checkGoal    func(*testing.T, goals.Goal)
 	}{
 		{
 			name:       "valid update",
@@ -740,7 +741,7 @@ func TestUpdateGoalHandler_Integration(t *testing.T) {
 				r.Header.Set("Content-Type", "application/json")
 				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
 			},
-			checkGoal: func(t *testing.T, g auth.Goal) {
+			checkGoal: func(t *testing.T, g goals.Goal) {
 				if g.Id == uuid.Nil {
 					t.Error("Goal ID should not be zero-value")
 				}
@@ -1086,7 +1087,7 @@ Actual error:   %v
 			}
 
 			if tt.checkGoal != nil {
-				goal := auth.Goal{}
+				goal := goals.Goal{}
 				decoder := json.NewDecoder(resp.Body)
 				err := decoder.Decode(&goal)
 				if err != nil {

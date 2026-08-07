@@ -1,4 +1,4 @@
-package auth_test
+package users_test
 
 import (
 	"encoding/json"
@@ -10,7 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/delroscol98/savings_tracker/backend/api/auth"
+	"github.com/delroscol98/savings_tracker/backend/api/users"
+	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/google/uuid"
 )
@@ -25,7 +26,7 @@ func TestCreateUserHandler(t *testing.T) {
 		wantErr    string
 		wantEmail  string
 		setupMock  func(*mockDB)
-		checkUser  func(*testing.T, auth.User)
+		checkUser  func(*testing.T, users.User)
 	}{
 		{
 			name:       "valid user",
@@ -33,7 +34,7 @@ func TestCreateUserHandler(t *testing.T) {
 			wantStatus: http.StatusCreated,
 			wantEmail:  "test@example.com",
 			setupMock:  func(md *mockDB) {},
-			checkUser: func(t *testing.T, u auth.User) {
+			checkUser: func(t *testing.T, u users.User) {
 				if u.Id == uuid.Nil {
 					t.Error("user ID should not be zero-value")
 				}
@@ -124,7 +125,7 @@ func TestCreateUserHandler(t *testing.T) {
 			md := &mockDB{users: make(map[string]database.User)}
 			tt.setupMock(md)
 
-			api := auth.AuthConfig{Queries: md}
+			api := users.UsersConfig{Queries: md}
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest(http.MethodPost, "/api/users", tt.body)
 			r.Header.Set("Content-Type", "application/json")
@@ -145,7 +146,7 @@ func TestCreateUserHandler(t *testing.T) {
 			}
 
 			if tt.checkUser != nil {
-				var user auth.User
+				var user users.User
 				if err := json.NewDecoder(w.Body).Decode(&user); err != nil {
 					t.Fatalf("failed to decode user: %v", err)
 				}
@@ -261,7 +262,7 @@ func TestLoginHandler(t *testing.T) {
 				md := &mockDB{users: make(map[string]database.User)}
 				tt.setupMock(md)
 
-				api := auth.AuthConfig{Queries: md}
+				api := users.UsersConfig{Queries: md}
 				w := httptest.NewRecorder()
 				r := httptest.NewRequest(http.MethodPost, "/api/login", tt.body)
 				r.Header.Set("Content-Type", "application/json")

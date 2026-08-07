@@ -10,8 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/delroscol98/savings_tracker/backend/api/auth"
+	"github.com/delroscol98/savings_tracker/backend/api/goals"
 	"github.com/delroscol98/savings_tracker/backend/api/health"
+	"github.com/delroscol98/savings_tracker/backend/api/users"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
 	"github.com/delroscol98/savings_tracker/backend/internal/middleware"
 	"github.com/delroscol98/savings_tracker/backend/internal/ratelimit"
@@ -113,13 +114,17 @@ func TestMain(m *testing.M) {
 	JWTSecret = "secret"
 
 	baseURL = "https://localhost:8080"
-	authApi := &auth.AuthConfig{
+	usersAPI := &users.UsersConfig{
 		Queries:     dbQueries,
 		Database:    db,
 		RateLimiter: testRateLimiter,
 		EmailSender: mockSender,
 		JWTSecret:   JWTSecret,
 		BaseURL:     baseURL,
+	}
+	goalsAPI := &goals.GoalsConfig{
+		Queries:   dbQueries,
+		JWTSecret: JWTSecret,
 	}
 	healthApi := &health.HealthConfig{
 		Queries: dbQueries,
@@ -128,14 +133,16 @@ func TestMain(m *testing.M) {
 	// SERVER MULTIPLEXER
 	serveMux := http.NewServeMux()
 	serveMux.Handle("GET /health", middleware.Log(http.HandlerFunc(healthApi.CheckHealthHandler)))
-	serveMux.Handle("POST /api/users", middleware.Log(http.HandlerFunc(authApi.CreateUserHandler)))
-	serveMux.Handle("POST /api/login", middleware.Log(http.HandlerFunc(authApi.LoginUserHandler)))
-	serveMux.Handle("POST /api/forgot-password", middleware.Log(http.HandlerFunc(authApi.RequestPasswordResetHandler)))
-	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(authApi.ResetPasswordHandler)))
-	serveMux.Handle("GET /api/goals", middleware.Log(http.HandlerFunc(authApi.GetGoalsHandler)))
-	serveMux.Handle("POST /api/goals", middleware.Log(http.HandlerFunc(authApi.CreateGoalHandler)))
-	serveMux.Handle("PUT /api/goals/{goalId}", middleware.Log(http.HandlerFunc(authApi.UpdateGoalHandler)))
-	serveMux.Handle("DELETE /api/goals/{goalId}", middleware.Log(http.HandlerFunc(authApi.DeleteGoalHandler)))
+
+	serveMux.Handle("POST /api/users", middleware.Log(http.HandlerFunc(usersAPI.CreateUserHandler)))
+	serveMux.Handle("POST /api/login", middleware.Log(http.HandlerFunc(usersAPI.LoginUserHandler)))
+	serveMux.Handle("POST /api/forgot-password", middleware.Log(http.HandlerFunc(usersAPI.RequestPasswordResetHandler)))
+	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(usersAPI.ResetPasswordHandler)))
+
+	serveMux.Handle("GET /api/goals", middleware.Log(http.HandlerFunc(goalsAPI.GetGoalsHandler)))
+	serveMux.Handle("POST /api/goals", middleware.Log(http.HandlerFunc(goalsAPI.CreateGoalHandler)))
+	serveMux.Handle("PUT /api/goals/{goalId}", middleware.Log(http.HandlerFunc(goalsAPI.UpdateGoalHandler)))
+	serveMux.Handle("DELETE /api/goals/{goalId}", middleware.Log(http.HandlerFunc(goalsAPI.DeleteGoalHandler)))
 
 	testServer = httptest.NewServer(serveMux)
 
