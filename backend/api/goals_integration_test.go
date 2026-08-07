@@ -442,7 +442,7 @@ func TestDeleteGoalHandler_Integration(t *testing.T) {
 				return req
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
-				jwt, _ := auth.MakeJWT(u.ID, "secret", time.Hour)
+				jwt, _ := auth.MakeJWT(u.ID, JWTSecret, time.Hour)
 				r.Header.Set("Content-Type", "application/json")
 				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
 			},
@@ -474,7 +474,7 @@ func TestDeleteGoalHandler_Integration(t *testing.T) {
 				return user, database.Goal{}
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
-				jwt, _ := auth.MakeJWT(u.ID, "secret", time.Hour)
+				jwt, _ := auth.MakeJWT(u.ID, JWTSecret, time.Hour)
 				r.Header.Set("Content-Type", "application/json")
 				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
 			},
@@ -555,7 +555,7 @@ func TestDeleteGoalHandler_Integration(t *testing.T) {
 				return user, goal
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
-				jwt, _ := auth.MakeJWT(u.ID, "secret", time.Hour)
+				jwt, _ := auth.MakeJWT(u.ID, JWTSecret, time.Hour)
 				r.Header.Set("Content-Type", "application/json")
 				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
 			},
@@ -596,7 +596,7 @@ func TestDeleteGoalHandler_Integration(t *testing.T) {
 				return user, goal
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
-				jwt, _ := auth.MakeJWT(uuid.New(), "secret", time.Hour)
+				jwt, _ := auth.MakeJWT(uuid.New(), JWTSecret, time.Hour)
 				r.Header.Set("Content-Type", "application/json")
 				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
 			},
@@ -637,7 +637,7 @@ func TestDeleteGoalHandler_Integration(t *testing.T) {
 				return user, goal
 			},
 			setupHeaders: func(u database.User, r *http.Request) {
-				jwt, _ := auth.MakeJWT(uuid.New(), "secret", -time.Hour)
+				jwt, _ := auth.MakeJWT(uuid.New(), JWTSecret, -time.Hour)
 				r.Header.Set("Content-Type", "application/json")
 				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", jwt))
 			},

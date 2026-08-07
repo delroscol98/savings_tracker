@@ -112,6 +112,7 @@ func TestMain(m *testing.M) {
 	mockSender = &MockEmailSender{}
 
 	JWTSecret = "secret"
+	os.Setenv("JWT_SECRET", JWTSecret)
 
 	baseURL = "https://localhost:8080"
 	usersAPI := &users.UsersConfig{
@@ -123,8 +124,7 @@ func TestMain(m *testing.M) {
 		BaseURL:     baseURL,
 	}
 	goalsAPI := &goals.GoalsConfig{
-		Queries:   dbQueries,
-		JWTSecret: JWTSecret,
+		Queries: dbQueries,
 	}
 	healthApi := &health.HealthConfig{
 		Queries: dbQueries,
@@ -139,10 +139,10 @@ func TestMain(m *testing.M) {
 	serveMux.Handle("POST /api/forgot-password", middleware.Log(http.HandlerFunc(usersAPI.RequestPasswordResetHandler)))
 	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(usersAPI.ResetPasswordHandler)))
 
-	serveMux.Handle("GET /api/goals", middleware.Log(http.HandlerFunc(goalsAPI.GetGoalsHandler)))
-	serveMux.Handle("POST /api/goals", middleware.Log(http.HandlerFunc(goalsAPI.CreateGoalHandler)))
-	serveMux.Handle("PUT /api/goals/{goalId}", middleware.Log(http.HandlerFunc(goalsAPI.UpdateGoalHandler)))
-	serveMux.Handle("DELETE /api/goals/{goalId}", middleware.Log(http.HandlerFunc(goalsAPI.DeleteGoalHandler)))
+	serveMux.Handle("GET /api/goals", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.GetGoalsHandler))))
+	serveMux.Handle("POST /api/goals", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.CreateGoalHandler))))
+	serveMux.Handle("PUT /api/goals/{goalId}", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.UpdateGoalHandler))))
+	serveMux.Handle("DELETE /api/goals/{goalId}", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.DeleteGoalHandler))))
 
 	testServer = httptest.NewServer(serveMux)
 

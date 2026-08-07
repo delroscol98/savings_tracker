@@ -69,8 +69,7 @@ func main() {
 		BaseURL:     baseURL,
 	}
 	goalsAPI := &goals.GoalsConfig{
-		Queries:   dbQueries,
-		JWTSecret: secret,
+		Queries: dbQueries,
 	}
 	healthApi := &health.HealthConfig{
 		Queries: dbQueries,
@@ -90,10 +89,10 @@ func main() {
 	serveMux.Handle("POST /api/reset-password", middleware.Log(http.HandlerFunc(usersAPI.ResetPasswordHandler)))
 
 	// GOALS
-	serveMux.Handle("GET /api/goals", middleware.Log(http.HandlerFunc(goalsAPI.GetGoalsHandler)))
-	serveMux.Handle("POST /api/goals", middleware.Log(http.HandlerFunc(goalsAPI.CreateGoalHandler)))
-	serveMux.Handle("PUT /api/goals/{goalId}", middleware.Log(http.HandlerFunc(goalsAPI.UpdateGoalHandler)))
-	serveMux.Handle("DELETE /api/goals/{goalId}", middleware.Log(http.HandlerFunc(goalsAPI.DeleteGoalHandler)))
+	serveMux.Handle("GET /api/goals", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.GetGoalsHandler))))
+	serveMux.Handle("POST /api/goals", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.CreateGoalHandler))))
+	serveMux.Handle("PUT /api/goals/{goalId}", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.UpdateGoalHandler))))
+	serveMux.Handle("DELETE /api/goals/{goalId}", middleware.Log(middleware.RequireAuth(http.HandlerFunc(goalsAPI.DeleteGoalHandler))))
 
 	// START THE SERVER
 	server := http.Server{
