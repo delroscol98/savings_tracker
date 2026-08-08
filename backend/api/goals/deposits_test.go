@@ -2,6 +2,7 @@ package goals_test
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -23,6 +24,9 @@ func TestCreateDepositHandler(t *testing.T) {
 	token, _ := auth.MakeJWT(userId, tokenSecret, expiresIn)
 
 	goalId := uuid.New()
+
+	anotherUserId := uuid.New()
+	anotherGoalId := uuid.New()
 
 	tests := []struct {
 		name         string
@@ -69,6 +73,152 @@ func TestCreateDepositHandler(t *testing.T) {
 					UserID:    userId,
 				}
 				md.Goals[goalId.String()] = goal
+			},
+		},
+		{
+			name:       "invalid deposit",
+			userId:     userId,
+			goalId:     goalId,
+			amount:     -100,
+			note:       "test deposit",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "Invalid parameters to create new deposit",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+			},
+			seedDB: func(md *mockDB) {
+				hash, _ := auth.HashPassword("ThisIsATestPassword")
+				user := database.User{
+					ID:             userId,
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
+					Email:          "test@example.com",
+					HashedPassword: hash,
+					FullName:       "John Smith",
+				}
+
+				md.Users[userId.String()] = user
+
+				goal := database.Goal{
+					ID:        goalId,
+					Target:    1000,
+					Deadline:  time.Now().AddDate(1, 0, 0),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+					UserID:    userId,
+				}
+				md.Goals[goalId.String()] = goal
+			},
+		},
+		{
+			name:       "mismatch user id",
+			userId:     userId,
+			goalId:     goalId,
+			amount:     100,
+			note:       "test deposit",
+			wantStatus: http.StatusForbidden,
+			wantErr:    "mismatch user id",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+			},
+			seedDB: func(md *mockDB) {
+				hash, _ := auth.HashPassword("ThisIsATestPassword")
+				user := database.User{
+					ID:             anotherUserId,
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
+					Email:          "test@example.com",
+					HashedPassword: hash,
+					FullName:       "John Smith",
+				}
+
+				md.Users[userId.String()] = user
+
+				goal := database.Goal{
+					ID:        goalId,
+					Target:    1000,
+					Deadline:  time.Now().AddDate(1, 0, 0),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+					UserID:    anotherUserId,
+				}
+				md.Goals[goalId.String()] = goal
+			},
+		},
+		{
+			name:       "unknown goal id",
+			userId:     userId,
+			goalId:     anotherGoalId,
+			amount:     100,
+			note:       "test deposit",
+			wantStatus: http.StatusNotFound,
+			wantErr:    "error finding goal",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+			},
+			seedDB: func(md *mockDB) {
+				hash, _ := auth.HashPassword("ThisIsATestPassword")
+				user := database.User{
+					ID:             userId,
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
+					Email:          "test@example.com",
+					HashedPassword: hash,
+					FullName:       "John Smith",
+				}
+
+				md.Users[userId.String()] = user
+
+				goal := database.Goal{
+					ID:        goalId,
+					Target:    1000,
+					Deadline:  time.Now().AddDate(1, 0, 0),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+					UserID:    userId,
+				}
+				md.Goals[goalId.String()] = goal
+			},
+		},
+		{
+			name:       "database error",
+			userId:     userId,
+			goalId:     goalId,
+			amount:     100,
+			note:       "test deposit",
+			wantStatus: http.StatusInternalServerError,
+			wantErr:    "error creating a deposit",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+			},
+			seedDB: func(md *mockDB) {
+				hash, _ := auth.HashPassword("ThisIsATestPassword")
+				user := database.User{
+					ID:             userId,
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
+					Email:          "test@example.com",
+					HashedPassword: hash,
+					FullName:       "John Smith",
+				}
+
+				md.Users[userId.String()] = user
+
+				goal := database.Goal{
+					ID:        goalId,
+					Target:    1000,
+					Deadline:  time.Now().AddDate(1, 0, 0),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+					UserID:    userId,
+				}
+				md.Goals[goalId.String()] = goal
+
+				md.CreateDepositErr = errors.New("error creating a deposit")
 			},
 		},
 	}

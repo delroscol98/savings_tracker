@@ -115,7 +115,7 @@ func (m *mockDB) DeleteGoal(ctx context.Context, arg database.DeleteGoalParams) 
 
 func (m *mockDB) CreateDeposit(ctx context.Context, arg database.CreateDepositParams) (database.Deposit, error) {
 	if m.CreateDepositErr != nil {
-		return database.Deposit{}, nil
+		return database.Deposit{}, m.CreateDepositErr
 	}
 
 	if m.Deposits == nil {
