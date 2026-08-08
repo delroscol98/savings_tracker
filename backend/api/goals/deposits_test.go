@@ -233,7 +233,7 @@ func TestCreateDepositHandler(t *testing.T) {
 
 			api := goals.GoalsConfig{Queries: md}
 			w := httptest.NewRecorder()
-			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/goals/%v", goalId), strings.NewReader(fmt.Sprintf(`{"amount": %v, "note": "%v"}`, tt.amount, tt.note)))
+			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/goals/%v/deposits", goalId), strings.NewReader(fmt.Sprintf(`{"amount": %v, "note": "%v"}`, tt.amount, tt.note)))
 			r.SetPathValue("goalId", tt.goalId.String())
 			tt.setupHeaders(r)
 			api.CreateDepositHandler(w, withUserContext(r, userId))
