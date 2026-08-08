@@ -1,7 +1,6 @@
 package goals_test
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,12 +16,13 @@ import (
 	"github.com/delroscol98/savings_tracker/backend/api/goals"
 	"github.com/delroscol98/savings_tracker/backend/internal/auth"
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
+	"github.com/delroscol98/savings_tracker/backend/internal/middleware"
 )
 
 var tokenSecret string
 
 func withUserContext(r *http.Request, userId uuid.UUID) *http.Request {
-	ctx := context.WithValue(r.Context(), "userId", userId)
+	ctx := middleware.WithUserId(r.Context(), userId)
 	return r.WithContext(ctx)
 }
 

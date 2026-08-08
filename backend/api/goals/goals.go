@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/delroscol98/savings_tracker/backend/internal/database"
+	"github.com/delroscol98/savings_tracker/backend/internal/middleware"
 	"github.com/delroscol98/savings_tracker/backend/internal/response"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -27,7 +28,7 @@ type GoalsConfig struct {
 }
 
 func (a *GoalsConfig) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
-	userId, ok := r.Context().Value("userId").(uuid.UUID)
+	userId, ok := middleware.GetUserId(r.Context())
 	if !ok {
 		response.RespondWithError(w, http.StatusUnauthorized, "User not found")
 		return
@@ -54,7 +55,7 @@ func (a *GoalsConfig) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *GoalsConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) {
-	userId, ok := r.Context().Value("userId").(uuid.UUID)
+	userId, ok := middleware.GetUserId(r.Context())
 	if !ok {
 		response.RespondWithError(w, http.StatusUnauthorized, "User not found")
 		return
@@ -112,7 +113,7 @@ func (a *GoalsConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (a *GoalsConfig) UpdateGoalHandler(w http.ResponseWriter, r *http.Request) {
-	userId, ok := r.Context().Value("userId").(uuid.UUID)
+	userId, ok := middleware.GetUserId(r.Context())
 	if !ok {
 		response.RespondWithError(w, http.StatusUnauthorized, "User not found")
 		return
@@ -183,7 +184,7 @@ func (a *GoalsConfig) UpdateGoalHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (a *GoalsConfig) DeleteGoalHandler(w http.ResponseWriter, r *http.Request) {
-	userId, ok := r.Context().Value("userId").(uuid.UUID)
+	userId, ok := middleware.GetUserId(r.Context())
 	if !ok {
 		response.RespondWithError(w, http.StatusUnauthorized, "User not found")
 		return

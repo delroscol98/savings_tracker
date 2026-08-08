@@ -97,7 +97,7 @@ func TestRequireAuth(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var gotUserID uuid.UUID
 			next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				gotUserID, _ = r.Context().Value("userId").(uuid.UUID)
+				gotUserID, _ = middleware.GetUserId(r.Context())
 				w.WriteHeader(http.StatusOK)
 			})
 
