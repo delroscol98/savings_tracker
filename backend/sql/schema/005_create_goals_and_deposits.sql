@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS goals(
 
 CREATE TABLE IF NOT EXISTS deposits(
     id UUID PRIMARY KEY,
-    amount INTEGER NOT NULL,
+    amount INTEGER CHECK (amount > 0),
     note TEXT,
     created_at TIMESTAMP NOT NULL,
     goal_id UUID NOT NULL,

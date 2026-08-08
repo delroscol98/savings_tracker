@@ -26,3 +26,15 @@ type Goal struct {
 	Deadline time.Time `json:"deadline"`
 	UserId   uuid.UUID `json:"user_id"`
 }
+
+type CreateDepositParams struct {
+	Amount int32  `json:"amount"`
+	Note   string `json:"note"`
+}
+
+type Deposit struct {
+	Id        uuid.UUID `json:"id"`
+	Amount    int32     `json:"amount"`
+	Note      string    `json:"note"`
+	CreatedAt time.Time `json:"created_at"`
+}
