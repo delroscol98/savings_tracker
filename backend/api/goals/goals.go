@@ -27,14 +27,14 @@ type GoalsConfig struct {
 	Queries Queries
 }
 
-func (a *GoalsConfig) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
+func (g *GoalsConfig) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	userId, ok := middleware.GetUserId(r.Context())
 	if !ok {
 		response.RespondWithError(w, http.StatusUnauthorized, "User not found")
 		return
 	}
 
-	dbGoals, err := a.Queries.GetGoals(r.Context(), userId)
+	dbGoals, err := g.Queries.GetGoals(r.Context(), userId)
 	if err != nil {
 		log.Print(err)
 		response.RespondWithError(w, http.StatusInternalServerError, "error fetching goals")
@@ -54,7 +54,7 @@ func (a *GoalsConfig) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	response.RespondWithJSON(w, http.StatusOK, goals)
 }
 
-func (a *GoalsConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) {
+func (g *GoalsConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) {
 	userId, ok := middleware.GetUserId(r.Context())
 	if !ok {
 		response.RespondWithError(w, http.StatusUnauthorized, "User not found")
@@ -87,7 +87,7 @@ func (a *GoalsConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	goal, err := a.Queries.CreateGoal(r.Context(), database.CreateGoalParams{
+	goal, err := g.Queries.CreateGoal(r.Context(), database.CreateGoalParams{
 		Target:   params.Target,
 		Deadline: params.Deadline,
 		UserID:   params.UserId,
@@ -112,7 +112,7 @@ func (a *GoalsConfig) CreateGoalHandler(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-func (a *GoalsConfig) UpdateGoalHandler(w http.ResponseWriter, r *http.Request) {
+func (g *GoalsConfig) UpdateGoalHandler(w http.ResponseWriter, r *http.Request) {
 	userId, ok := middleware.GetUserId(r.Context())
 	if !ok {
 		response.RespondWithError(w, http.StatusUnauthorized, "User not found")
@@ -128,7 +128,7 @@ func (a *GoalsConfig) UpdateGoalHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	goal, err := a.Queries.GetGoalById(r.Context(), goalId)
+	goal, err := g.Queries.GetGoalById(r.Context(), goalId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			response.RespondWithError(w, http.StatusNotFound, "error finding goal")
@@ -163,7 +163,7 @@ func (a *GoalsConfig) UpdateGoalHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	goal, err = a.Queries.UpdateGoal(r.Context(), database.UpdateGoalParams{
+	goal, err = g.Queries.UpdateGoal(r.Context(), database.UpdateGoalParams{
 		Target:   body.Target,
 		Deadline: body.Deadline,
 		ID:       goalId,
@@ -183,7 +183,7 @@ func (a *GoalsConfig) UpdateGoalHandler(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-func (a *GoalsConfig) DeleteGoalHandler(w http.ResponseWriter, r *http.Request) {
+func (g *GoalsConfig) DeleteGoalHandler(w http.ResponseWriter, r *http.Request) {
 	userId, ok := middleware.GetUserId(r.Context())
 	if !ok {
 		response.RespondWithError(w, http.StatusUnauthorized, "User not found")
@@ -199,7 +199,7 @@ func (a *GoalsConfig) DeleteGoalHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	goal, err := a.Queries.GetGoalById(r.Context(), goalId)
+	goal, err := g.Queries.GetGoalById(r.Context(), goalId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			response.RespondWithError(w, http.StatusNotFound, "error finding goal")
@@ -215,7 +215,7 @@ func (a *GoalsConfig) DeleteGoalHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = a.Queries.DeleteGoal(r.Context(), database.DeleteGoalParams{
+	err = g.Queries.DeleteGoal(r.Context(), database.DeleteGoalParams{
 		ID:     goalId,
 		UserID: userId,
 	})
