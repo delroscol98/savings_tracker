@@ -21,6 +21,8 @@ type Queries interface {
 	GetGoalById(ctx context.Context, id uuid.UUID) (database.Goal, error)
 	UpdateGoal(ctx context.Context, arg database.UpdateGoalParams) (database.Goal, error)
 	DeleteGoal(ctx context.Context, arg database.DeleteGoalParams) error
+
+	CreateDeposit(ctx context.Context, arg database.CreateDepositParams) (database.Deposit, error)
 }
 
 type GoalsConfig struct {

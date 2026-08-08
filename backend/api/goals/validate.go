@@ -26,3 +26,18 @@ func ValidateGoalParams(params GoalFields) response.FieldErrors {
 
 	return fieldsErrors
 }
+
+func ValidateDepositParams(params CreateDepositParams) response.FieldErrors {
+	fieldsErrors := make(response.FieldErrors)
+
+	if params.Amount <= 0 {
+		fieldsErrors["amount"] = append(fieldsErrors["amount"], "deposit must be greater than 0")
+	}
+
+	// Check for any error messages
+	if len(fieldsErrors) == 0 {
+		return nil
+	}
+
+	return fieldsErrors
+}
