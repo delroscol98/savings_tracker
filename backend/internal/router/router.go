@@ -32,6 +32,7 @@ func NewRouter(deps Dependencies) *http.ServeMux {
 	serveMux.Handle("POST /api/goals", middleware.Log(middleware.RequireAuth(http.HandlerFunc(deps.Goals.CreateGoalHandler))))
 	serveMux.Handle("PUT /api/goals/{goalId}", middleware.Log(middleware.RequireAuth(http.HandlerFunc(deps.Goals.UpdateGoalHandler))))
 	serveMux.Handle("DELETE /api/goals/{goalId}", middleware.Log(middleware.RequireAuth(http.HandlerFunc(deps.Goals.DeleteGoalHandler))))
+	serveMux.Handle("POST /api/goals/{goalId}/deposits", middleware.Log(middleware.RequireAuth(http.HandlerFunc(deps.Goals.CreateDepositHandler))))
 
 	return serveMux
 }
