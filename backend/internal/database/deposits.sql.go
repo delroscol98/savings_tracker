@@ -50,3 +50,43 @@ func (q *Queries) CreateDeposit(ctx context.Context, arg CreateDepositParams) (D
 	)
 	return i, err
 }
+
+const getDepositsByGoalAndUser = `-- name: GetDepositsByGoalAndUser :many
+SELECT id, amount, note, created_at, goal_id, user_id FROM deposits
+WHERE goal_id = $1 AND user_id = $2
+`
+
+type GetDepositsByGoalAndUserParams struct {
+	GoalID uuid.UUID
+	UserID uuid.UUID
+}
+
+func (q *Queries) GetDepositsByGoalAndUser(ctx context.Context, arg GetDepositsByGoalAndUserParams) ([]Deposit, error) {
+	rows, err := q.db.QueryContext(ctx, getDepositsByGoalAndUser, arg.GoalID, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Deposit
+	for rows.Next() {
+		var i Deposit
+		if err := rows.Scan(
+			&i.ID,
+			&i.Amount,
+			&i.Note,
+			&i.CreatedAt,
+			&i.GoalID,
+			&i.UserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

@@ -1,7 +1,6 @@
 package goals
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -14,20 +13,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
-
-type Queries interface {
-	GetGoals(ctx context.Context, userID uuid.UUID) ([]database.Goal, error)
-	CreateGoal(ctx context.Context, arg database.CreateGoalParams) (database.Goal, error)
-	GetGoalById(ctx context.Context, id uuid.UUID) (database.Goal, error)
-	UpdateGoal(ctx context.Context, arg database.UpdateGoalParams) (database.Goal, error)
-	DeleteGoal(ctx context.Context, arg database.DeleteGoalParams) error
-
-	CreateDeposit(ctx context.Context, arg database.CreateDepositParams) (database.Deposit, error)
-}
-
-type GoalsConfig struct {
-	Queries Queries
-}
 
 func (g *GoalsConfig) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	userId, ok := middleware.GetUserId(r.Context())
