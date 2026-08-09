@@ -86,3 +86,58 @@ func (g *GoalsConfig) CreateDepositHandler(w http.ResponseWriter, r *http.Reques
 		CreatedAt: deposit.CreatedAt,
 	})
 }
+
+func (g *GoalsConfig) GetDepositsByGoalAndUserHandler(w http.ResponseWriter, r *http.Request) {
+	userId, ok := middleware.GetUserId(r.Context())
+	if !ok {
+		response.RespondWithError(w, http.StatusUnauthorized, "User not found")
+		return
+	}
+
+	goalIdString := r.PathValue("goalId")
+
+	goalId, err := uuid.Parse(goalIdString)
+	if err != nil {
+		log.Print(err)
+		response.RespondWithError(w, http.StatusBadRequest, "error parsing goal id")
+		return
+	}
+
+	goal, err := g.Queries.GetGoalById(r.Context(), goalId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			response.RespondWithError(w, http.StatusNotFound, "error finding goal")
+			return
+		}
+		log.Print(err)
+		response.RespondWithError(w, http.StatusInternalServerError, "error finding goal")
+		return
+	}
+
+	if userId != goal.UserID {
+		response.RespondWithError(w, http.StatusForbidden, "mismatch user id")
+		return
+	}
+
+	dbDeposits, err := g.Queries.GetDepositsByGoalAndUser(r.Context(), database.GetDepositsByGoalAndUserParams{
+		GoalID: goalId,
+		UserID: userId,
+	})
+	if err != nil {
+		log.Print(err)
+		response.RespondWithError(w, http.StatusInternalServerError, "error fetching deposits")
+		return
+	}
+
+	deposits := []Deposit{}
+	for _, d := range dbDeposits {
+		deposits = append(deposits, Deposit{
+			Id:        d.ID,
+			Amount:    d.Amount,
+			Note:      d.Note.String,
+			CreatedAt: d.CreatedAt,
+		})
+	}
+
+	response.RespondWithJSON(w, http.StatusOK, deposits)
+}

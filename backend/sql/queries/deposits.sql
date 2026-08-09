@@ -9,3 +9,7 @@ VALUES (
     $4
 )
 RETURNING *;
+
+-- name: GetDepositsByGoalAndUser :many
+SELECT * FROM deposits
+WHERE goal_id = $1 AND user_id = $2;
