@@ -35,6 +35,7 @@ func (g *GoalsConfig) GetGoalsHandler(w http.ResponseWriter, r *http.Request) {
 			Target:   goal.Target,
 			Deadline: goal.Deadline,
 			UserId:   goal.UserID,
+			Progress: goal.Progress,
 		}
 	}
 

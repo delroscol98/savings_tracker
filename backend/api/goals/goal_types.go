@@ -25,6 +25,7 @@ type Goal struct {
 	Target   int32     `json:"target"`
 	Deadline time.Time `json:"deadline"`
 	UserId   uuid.UUID `json:"user_id"`
+	Progress int64     `json:"progress"`
 }
 
 type CreateDepositParams struct {

@@ -25,5 +25,14 @@ DELETE FROM goals
 WHERE id = $1 AND user_id = $2;
 
 -- name: GetGoals :many
-SELECT * FROM goals
-WHERE user_id = $1;
+SELECT 
+    goals.id,
+    goals.target,
+    goals.deadline,
+    goals.created_at, 
+    goals.updated_at,
+    goals.user_id,
+    SUM(deposits.amount) as progress
+FROM goals
+INNER JOIN deposits ON goals.user_id = deposits.user_id
+WHERE goals.user_id = $1;
