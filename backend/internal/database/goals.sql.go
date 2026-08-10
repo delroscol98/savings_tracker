@@ -80,19 +80,38 @@ func (q *Queries) GetGoalById(ctx context.Context, id uuid.UUID) (Goal, error) {
 }
 
 const getGoals = `-- name: GetGoals :many
-SELECT id, target, deadline, created_at, updated_at, user_id FROM goals
-WHERE user_id = $1
+SELECT 
+    goals.id,
+    goals.target,
+    goals.deadline,
+    goals.created_at, 
+    goals.updated_at,
+    goals.user_id,
+    SUM(deposits.amount) as progress
+FROM goals
+INNER JOIN deposits ON goals.user_id = deposits.user_id
+WHERE goals.user_id = $1
 `
 
-func (q *Queries) GetGoals(ctx context.Context, userID uuid.UUID) ([]Goal, error) {
+type GetGoalsRow struct {
+	ID        uuid.UUID
+	Target    int32
+	Deadline  time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	UserID    uuid.UUID
+	Progress  int64
+}
+
+func (q *Queries) GetGoals(ctx context.Context, userID uuid.UUID) ([]GetGoalsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getGoals, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Goal
+	var items []GetGoalsRow
 	for rows.Next() {
-		var i Goal
+		var i GetGoalsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Target,
@@ -100,6 +119,7 @@ func (q *Queries) GetGoals(ctx context.Context, userID uuid.UUID) ([]Goal, error
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.UserID,
+			&i.Progress,
 		); err != nil {
 			return nil, err
 		}

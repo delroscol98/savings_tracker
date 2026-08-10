@@ -8,7 +8,7 @@ import (
 )
 
 type Queries interface {
-	GetGoals(ctx context.Context, userID uuid.UUID) ([]database.Goal, error)
+	GetGoals(ctx context.Context, userID uuid.UUID) ([]database.GetGoalsRow, error)
 	CreateGoal(ctx context.Context, arg database.CreateGoalParams) (database.Goal, error)
 	GetGoalById(ctx context.Context, id uuid.UUID) (database.Goal, error)
 	UpdateGoal(ctx context.Context, arg database.UpdateGoalParams) (database.Goal, error)
