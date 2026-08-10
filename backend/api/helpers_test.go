@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 	"time"
 
@@ -58,4 +59,23 @@ func seedUserWithGoal(t *testing.T, email string, target int32, deadline time.Ti
 	goal := seedGoal(t, user.ID, target, deadline)
 
 	return user, goal
+}
+
+func seedDeposit(t *testing.T, goalID, userID uuid.UUID, amount int32, note string) database.Deposit {
+	t.Helper()
+
+	deposit, err := dbQueries.CreateDeposit(context.Background(), database.CreateDepositParams{
+		Amount: amount,
+		Note: sql.NullString{
+			String: note,
+			Valid:  true,
+		},
+		GoalID: goalID,
+		UserID: userID,
+	})
+	if err != nil {
+		t.Fatalf("failed to seed deposit for goal %v: %v", goalID, err)
+	}
+
+	return deposit
 }
