@@ -87,10 +87,11 @@ SELECT
     goals.created_at, 
     goals.updated_at,
     goals.user_id,
-    SUM(deposits.amount) as progress
+    COALESCE(SUM(deposits.amount), 0)::bigint as progress
 FROM goals
-INNER JOIN deposits ON goals.user_id = deposits.user_id
+LEFT JOIN deposits ON goals.id = deposits.goal_id
 WHERE goals.user_id = $1
+GROUP BY goals.id, goals.target, goals.deadline, goals.created_at, goals.updated_at, goals.user_id
 `
 
 type GetGoalsRow struct {
