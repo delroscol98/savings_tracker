@@ -327,6 +327,100 @@ func TestGetDepositsByGoalAndUserHandler(t *testing.T) {
 				md.Deposits[deposit2Id.String()] = deposit2
 			},
 		},
+		{
+			name:       "No associated goal",
+			goalId:     goalId,
+			userId:     userId,
+			wantStatus: http.StatusNotFound,
+			wantErr:    "error finding goal",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+			},
+			seedDB: func(md *mockDB) {
+				deposit1Id := uuid.New()
+				deposit1 := database.Deposit{
+					ID:     deposit1Id,
+					Amount: 100,
+					Note: sql.NullString{
+						String: "test",
+						Valid:  true,
+					},
+					CreatedAt: time.Now(),
+					GoalID:    goalId,
+					UserID:    userId,
+				}
+
+				deposit2Id := uuid.New()
+				deposit2 := database.Deposit{
+					ID:     deposit2Id,
+					Amount: 200,
+					Note: sql.NullString{
+						String: "AnotherTest",
+						Valid:  true,
+					},
+					CreatedAt: time.Now(),
+					GoalID:    goalId,
+					UserID:    userId,
+				}
+
+				md.Deposits[deposit1Id.String()] = deposit1
+				md.Deposits[deposit2Id.String()] = deposit2
+			},
+		},
+		{
+			name:       "database error",
+			goalId:     goalId,
+			userId:     userId,
+			wantStatus: http.StatusInternalServerError,
+			wantErr:    "error fetching deposits",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+			},
+			seedDB: func(md *mockDB) {
+				md.GetDepositsByGoalAndUserParamsErr = errors.New("database down")
+
+				goal := database.Goal{
+					ID:        goalId,
+					Target:    1000,
+					Deadline:  time.Now().AddDate(1, 0, 0),
+					CreatedAt: time.Now().AddDate(0, -6, -0),
+					UpdatedAt: time.Now().AddDate(0, -6, 0),
+					UserID:    userId,
+				}
+				md.Goals[goalId.String()] = goal
+
+				deposit1Id := uuid.New()
+				deposit1 := database.Deposit{
+					ID:     deposit1Id,
+					Amount: 100,
+					Note: sql.NullString{
+						String: "test",
+						Valid:  true,
+					},
+					CreatedAt: time.Now(),
+					GoalID:    goalId,
+					UserID:    userId,
+				}
+
+				deposit2Id := uuid.New()
+				deposit2 := database.Deposit{
+					ID:     deposit2Id,
+					Amount: 200,
+					Note: sql.NullString{
+						String: "AnotherTest",
+						Valid:  true,
+					},
+					CreatedAt: time.Now(),
+					GoalID:    goalId,
+					UserID:    userId,
+				}
+
+				md.Deposits[deposit1Id.String()] = deposit1
+				md.Deposits[deposit2Id.String()] = deposit2
+			},
+		},
 	}
 
 	for _, tt := range tests {
