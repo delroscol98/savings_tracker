@@ -24,7 +24,7 @@ type mockDB struct {
 	Deposits map[string]database.Deposit
 }
 
-func (m *mockDB) GetGoals(ctx context.Context, userID uuid.UUID) ([]database.Goal, error) {
+func (m *mockDB) GetGoals(ctx context.Context, userID uuid.UUID) ([]database.GetGoalsRow, error) {
 	if m.GetGoalsErr != nil {
 		return nil, m.GetGoalsErr
 	}
@@ -33,10 +33,24 @@ func (m *mockDB) GetGoals(ctx context.Context, userID uuid.UUID) ([]database.Goa
 		m.Goals = make(map[string]database.Goal)
 	}
 
-	goals := make([]database.Goal, 0, len(m.Goals))
+	goals := make([]database.GetGoalsRow, 0, len(m.Goals))
 	for _, goal := range m.Goals {
+		progress := 0
+		for _, deposit := range m.Deposits {
+			if goal.UserID == deposit.UserID && goal.ID == deposit.GoalID {
+				progress = progress + int(deposit.Amount)
+			}
+		}
 		if userID == goal.UserID {
-			goals = append(goals, goal)
+			goals = append(goals, database.GetGoalsRow{
+				ID:        goal.ID,
+				Target:    goal.Target,
+				Deadline:  goal.Deadline,
+				CreatedAt: goal.CreatedAt,
+				UpdatedAt: goal.CreatedAt,
+				UserID:    goal.UserID,
+				Progress:  int64(progress),
+			})
 		}
 	}
 
