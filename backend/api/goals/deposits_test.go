@@ -1,6 +1,7 @@
 package goals_test
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -237,6 +238,110 @@ func TestCreateDepositHandler(t *testing.T) {
 			r.SetPathValue("goalId", tt.goalId.String())
 			tt.setupHeaders(r)
 			api.CreateDepositHandler(w, withUserContext(r, userId))
+
+			if w.Code != tt.wantStatus {
+				t.Errorf(`
+Expected status code: %v
+Actual status code:   %v
+`, tt.wantStatus, w.Code)
+			}
+
+			if tt.wantErr != "" {
+				var body map[string]interface{}
+				if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+					t.Fatalf("failed to decode response body: %v", err)
+				}
+				if body["error"] != tt.wantErr {
+					t.Errorf("want error %q, got %q", tt.wantErr, body["error"])
+				}
+			}
+		})
+	}
+}
+
+func TestGetDepositsByGoalAndUserHandler(t *testing.T) {
+	userId := uuid.New()
+	tokenSecret = "secret"
+	expiresIn := time.Hour
+	token, _ := auth.MakeJWT(userId, tokenSecret, expiresIn)
+
+	goalId := uuid.New()
+
+	tests := []struct {
+		name         string
+		goalId       uuid.UUID
+		userId       uuid.UUID
+		wantStatus   int
+		wantErr      string
+		setupHeaders func(*http.Request)
+		seedDB       func(*mockDB)
+	}{
+		{
+			name:       "valid get",
+			goalId:     goalId,
+			userId:     userId,
+			wantStatus: http.StatusOK,
+			wantErr:    "",
+			setupHeaders: func(r *http.Request) {
+				r.Header.Set("Content-Type", "application/json")
+				r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+			},
+			seedDB: func(md *mockDB) {
+				goal := database.Goal{
+					ID:        goalId,
+					Target:    1000,
+					Deadline:  time.Now().AddDate(1, 0, 0),
+					CreatedAt: time.Now().AddDate(0, -6, -0),
+					UpdatedAt: time.Now().AddDate(0, -6, 0),
+					UserID:    userId,
+				}
+				md.Goals[goalId.String()] = goal
+
+				deposit1Id := uuid.New()
+				deposit1 := database.Deposit{
+					ID:     deposit1Id,
+					Amount: 100,
+					Note: sql.NullString{
+						String: "test",
+						Valid:  true,
+					},
+					CreatedAt: time.Now(),
+					GoalID:    goalId,
+					UserID:    userId,
+				}
+
+				deposit2Id := uuid.New()
+				deposit2 := database.Deposit{
+					ID:     deposit2Id,
+					Amount: 200,
+					Note: sql.NullString{
+						String: "AnotherTest",
+						Valid:  true,
+					},
+					CreatedAt: time.Now(),
+					GoalID:    goalId,
+					UserID:    userId,
+				}
+
+				md.Deposits[deposit1Id.String()] = deposit1
+				md.Deposits[deposit2Id.String()] = deposit2
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := &mockDB{
+				Goals:    make(map[string]database.Goal),
+				Deposits: make(map[string]database.Deposit),
+			}
+			tt.seedDB(md)
+			api := goals.GoalsConfig{Queries: md}
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/goals/%v/deposits", goalId), nil)
+			r.SetPathValue("goalId", tt.goalId.String())
+			tt.setupHeaders(r)
+			api.GetDepositsByGoalAndUserHandler(w, withUserContext(r, userId))
 
 			if w.Code != tt.wantStatus {
 				t.Errorf(`

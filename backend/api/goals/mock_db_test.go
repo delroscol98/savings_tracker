@@ -11,12 +11,13 @@ import (
 )
 
 type mockDB struct {
-	GetGoalsErr      error
-	CreateGoalErr    error
-	GetGoalByIdErr   error
-	UpdateGoalErr    error
-	DeleteGoalErr    error
-	CreateDepositErr error
+	GetGoalsErr                       error
+	CreateGoalErr                     error
+	GetGoalByIdErr                    error
+	UpdateGoalErr                     error
+	DeleteGoalErr                     error
+	CreateDepositErr                  error
+	GetDepositsByGoalAndUserParamsErr error
 
 	Users    map[string]database.User
 	Goals    map[string]database.Goal
@@ -135,4 +136,23 @@ func (m *mockDB) CreateDeposit(ctx context.Context, arg database.CreateDepositPa
 	m.Deposits[depositId.String()] = deposit
 
 	return deposit, nil
+}
+
+func (m *mockDB) GetDepositsByGoalAndUser(ctx context.Context, arg database.GetDepositsByGoalAndUserParams) ([]database.Deposit, error) {
+	if m.GetDepositsByGoalAndUserParamsErr != nil {
+		return nil, m.GetDepositsByGoalAndUserParamsErr
+	}
+
+	if len(m.Deposits) == 0 {
+		return nil, nil
+	}
+
+	deposits := []database.Deposit{}
+	for _, deposit := range m.Deposits {
+		if deposit.GoalID == arg.GoalID && deposit.UserID == arg.UserID {
+			deposits = append(deposits, deposit)
+		}
+	}
+
+	return deposits, nil
 }
