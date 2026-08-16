@@ -5,8 +5,8 @@ on:
     branches: [main]
 
 jobs:
-  tests:
-    name: Tests
+  backend_tests:
+    name: Backend Tests
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -39,8 +39,8 @@ jobs:
           cd backend
           go test ./...
 
-  format_check:
-    name: Style
+  backend_format_check:
+    name: Backend Format Check
     runs-on: ubuntu-latest
 
     steps:
@@ -60,3 +60,31 @@ jobs:
 
       - name: Run staticcheck
         run: (cd backend && staticcheck ./...)
+
+  frontend_build_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup_node@v7
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Linting
+        run: npm run lint
+
+      - name: Run Formatting
+        run: npm run format
+
+      # - name: Run Tests
+      #   run: npm test
+
+      - name: Build Project
+        run: npm run build
