@@ -1,3 +1,5 @@
+import { type ZodType } from "zod";
+
 export function getStoredToken(): string {
   const token = localStorage.getItem("token");
   if (token == undefined) {
@@ -35,7 +37,8 @@ export class ApiError extends Error {
 
 export async function client<T>(
   path: string,
-  options: RequestInit & { body?: unknown },
+  options: Omit<RequestInit, "body"> & { body?: unknown },
+  schema?: ZodType<T>,
 ): Promise<T> {
   const url = import.meta.env.VITE_API_URL + path;
   const headers: Record<string, string> = {};
@@ -43,19 +46,19 @@ export async function client<T>(
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
-  if (options.body && typeof options.body != "string") {
-    options.body = JSON.stringify(options.body);
+
+  let { body, ...rest } = options;
+  if (body && typeof body != "string") {
+    body = JSON.stringify(body);
     headers["Content-Type"] = "application/json";
   }
 
   let response: Response;
   try {
     response = await fetch(url, {
-      ...options,
-      headers: {
-        ...options.headers,
-        ...headers,
-      },
+      ...rest,
+      body: typeof body === "string" ? body : undefined,
+      headers: { ...rest.headers, ...headers },
     });
   } catch {
     throw new ApiError(0, "Network error");
@@ -70,6 +73,17 @@ export async function client<T>(
 
   if (!response.ok) {
     throw new ApiError(response.status, data.error, data.fields);
+  }
+
+  if (schema) {
+    const result = schema.safeParse(data);
+    if (!result.success) {
+      throw new ApiError(
+        response.status,
+        `Response validation failed: ${result.error.message}`,
+      );
+    }
+    return result.data;
   }
 
   return data as T;

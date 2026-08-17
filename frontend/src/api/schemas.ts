@@ -13,6 +13,14 @@ export const LoginResponseSchema = z
   })
   .extend(UserSchema);
 
+export const ForgotPasswordSchema = z.object({
+  message: z.string(),
+});
+
+export const ResetPasswordSchema = z.object({
+  message: z.string(),
+});
+
 export const GoalSchema = z.object({
   id: z.uuid(),
   target: z.number().int().nonnegative(),
