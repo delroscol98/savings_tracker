@@ -1,4 +1,5 @@
 import { type ZodType } from "zod";
+import { ErrorEnvelope } from "./schemas";
 
 export function getStoredToken(): string {
   const token = localStorage.getItem("token");
@@ -47,9 +48,9 @@ export async function client<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  let { body, ...rest } = options;
+  const { body, ...rest } = options;
   if (body && typeof body != "string") {
-    body = JSON.stringify(body);
+    options.body = JSON.stringify(body);
     headers["Content-Type"] = "application/json";
   }
 
@@ -64,7 +65,7 @@ export async function client<T>(
     throw new ApiError(0, "Network error");
   }
 
-  let data: any;
+  let data: unknown;
   try {
     data = await response.json();
   } catch {
@@ -72,7 +73,15 @@ export async function client<T>(
   }
 
   if (!response.ok) {
-    throw new ApiError(response.status, data.error, data.fields);
+    const result = ErrorEnvelope.safeParse(data);
+    if (result.success) {
+      throw new ApiError(
+        response.status,
+        result.data.error,
+        result.data.fields,
+      );
+    }
+    throw new ApiError(response.status, "Unknown error type");
   }
 
   if (schema) {
