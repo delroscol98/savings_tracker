@@ -1,5 +1,5 @@
 import { type ZodType } from "zod";
-import { ErrorEnvelope } from "./schemas";
+import { ErrorEnvelopeSchema } from "./schemas";
 
 export function getStoredToken(): string {
   const token = localStorage.getItem("token");
@@ -73,7 +73,7 @@ export async function client<T>(
   }
 
   if (!response.ok) {
-    const result = ErrorEnvelope.safeParse(data);
+    const result = ErrorEnvelopeSchema.safeParse(data);
     if (result.success) {
       throw new ApiError(
         response.status,
