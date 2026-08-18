@@ -51,7 +51,11 @@ export async function updateGoal(
 }
 
 export async function deleteGoal(goalId: string): Promise<Message> {
-  return client<Message>(`api/goals/${goalId}`, {
-    method: "DELETE",
-  });
+  return client<Message>(
+    `api/goals/${goalId}`,
+    {
+      method: "DELETE",
+    },
+    MessageSchema,
+  );
 }
