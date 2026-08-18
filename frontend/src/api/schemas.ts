@@ -13,11 +13,7 @@ export const LoginResponseSchema = z
   })
   .extend(UserSchema);
 
-export const ForgotPasswordSchema = z.object({
-  message: z.string(),
-});
-
-export const ResetPasswordSchema = z.object({
+export const MessageSchema = z.object({
   message: z.string(),
 });
 

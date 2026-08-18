@@ -1,16 +1,10 @@
 import { z } from "zod";
-import {
-  ForgotPasswordSchema,
-  LoginResponseSchema,
-  ResetPasswordSchema,
-  UserSchema,
-} from "./schemas";
+import { LoginResponseSchema, MessageSchema, UserSchema } from "./schemas";
 import { client } from "./client";
 
 type User = z.infer<typeof UserSchema>;
 type LoginResponse = z.infer<typeof LoginResponseSchema>;
-type ForgotPassword = z.infer<typeof ForgotPasswordSchema>;
-type ResetPassword = z.infer<typeof ResetPasswordSchema>;
+type Message = z.infer<typeof MessageSchema>;
 
 export async function register(
   email: string,
@@ -41,19 +35,19 @@ export async function login(
   );
 }
 
-export async function forgotPassword(email: string): Promise<ForgotPassword> {
-  return client<ForgotPassword>(
+export async function forgotPassword(email: string): Promise<Message> {
+  return client<Message>(
     "/api/forgot-password",
     {
       method: "POST",
       body: { email },
     },
-    ForgotPasswordSchema,
+    MessageSchema,
   );
 }
 
-export async function resetPassword(password: string): Promise<ResetPassword> {
-  return client<ResetPassword>(
+export async function resetPassword(password: string): Promise<Message> {
+  return client<Message>(
     "/api/reset-password",
     {
       method: "POST",
@@ -61,6 +55,6 @@ export async function resetPassword(password: string): Promise<ResetPassword> {
         password,
       },
     },
-    ResetPasswordSchema,
+    MessageSchema,
   );
 }
