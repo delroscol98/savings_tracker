@@ -1,9 +1,6 @@
 import { z } from "zod";
-import { GoalSchema, MessageSchema } from "./schemas";
+import { GoalSchema, MessageSchema, type Goal, type Message } from "./schemas";
 import { client } from "./client";
-
-type Goal = z.infer<typeof GoalSchema>;
-type Message = z.infer<typeof MessageSchema>;
 
 export async function listGoals(): Promise<Goal[]> {
   return client<Goal[]>(

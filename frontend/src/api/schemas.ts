@@ -6,16 +6,19 @@ export const UserSchema = z.object({
   updated_at: z.coerce.date(),
   email: z.email(),
 });
+export type User = z.infer<typeof UserSchema>;
 
 export const LoginResponseSchema = z
   .object({
     token: z.string(),
   })
   .extend(UserSchema);
+export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 
 export const MessageSchema = z.object({
   message: z.string(),
 });
+export type Message = z.infer<typeof MessageSchema>;
 
 export const GoalSchema = z.object({
   id: z.uuid(),
@@ -24,6 +27,7 @@ export const GoalSchema = z.object({
   user_id: z.uuid(),
   progress: z.number().int(),
 });
+export type Goal = z.infer<typeof GoalSchema>;
 
 export const DepositSchema = z.object({
   id: z.uuid(),
@@ -31,8 +35,10 @@ export const DepositSchema = z.object({
   note: z.string().optional(),
   created_at: z.coerce.date(),
 });
+export type Deposit = z.infer<typeof DepositSchema>;
 
-export const ErrorEnvelope = z.object({
+export const ErrorEnvelopeSchema = z.object({
   error: z.string(),
   fields: z.record(z.string(), z.array(z.string())).optional(),
 });
+export type ErrorEnvelope = z.infer<typeof ErrorEnvelopeSchema>;

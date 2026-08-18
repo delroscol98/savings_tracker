@@ -1,10 +1,12 @@
-import { z } from "zod";
-import { LoginResponseSchema, MessageSchema, UserSchema } from "./schemas";
+import {
+  LoginResponseSchema,
+  MessageSchema,
+  UserSchema,
+  type LoginResponse,
+  type Message,
+  type User,
+} from "./schemas";
 import { client } from "./client";
-
-type User = z.infer<typeof UserSchema>;
-type LoginResponse = z.infer<typeof LoginResponseSchema>;
-type Message = z.infer<typeof MessageSchema>;
 
 export async function register(
   email: string,

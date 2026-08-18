@@ -1,8 +1,5 @@
-import { z } from "zod";
-import { DepositSchema } from "./schemas";
+import { DepositSchema, type Deposit } from "./schemas";
 import { client } from "./client";
-
-type Deposit = z.infer<typeof DepositSchema>;
 
 export async function listDeposits(goalId: string): Promise<Deposit> {
   return client<Deposit>(
