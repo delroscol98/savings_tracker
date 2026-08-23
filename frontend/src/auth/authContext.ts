@@ -1,27 +1,43 @@
-import { login } from "@/api/auth";
-import { clearStoredToken, client } from "@/api/client";
-import type { LoginResponse, User } from "@/api/schemas";
-import { createContext, useReducer } from "react";
+import type { User } from "@/api/schemas";
+import { createContext, useContext } from "react";
 
-type AuthContextValue = {
+export type AuthState = {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<LoginResponse>;
+};
+
+export type AuthContextValue = AuthState & {
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 };
 
-const AuthContext = createContext(null);
+export type AuthPayload = {
+  user: User;
+  token: string;
+};
 
-const initialState: AuthContextValue = {
+export type AuthAction =
+  | { type: "LOGIN_START" }
+  | { type: "LOGIN_SUCCESS"; payload: AuthPayload }
+  | { type: "LOGIN_FAILURE" }
+  | { type: "LOGOUT" }
+  | { type: "HYDRATE"; payload: AuthPayload };
+
+export const initialAuthState: AuthState = {
   user: null,
   token: null,
   isLoading: false,
-  login: login,
-  logout: function logout() {
-    this.user = null;
-    this.token = null;
-
-    clearStoredToken();
-  },
 };
+
+export const AuthCtx = createContext<AuthContextValue | null>(null);
+
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthCtx);
+
+  if (ctx == null) {
+    throw new Error("Auth Context must be used inside Auth Provider");
+  }
+
+  return ctx;
+}
