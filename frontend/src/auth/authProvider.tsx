@@ -1,5 +1,5 @@
 import { login as apiLogin } from "@/api/auth";
-import { useEffect, useReducer, type ReactNode } from "react";
+import { useCallback, useEffect, useReducer, type ReactNode } from "react";
 import {
   AuthCtx,
   initialAuthState,
@@ -14,7 +14,7 @@ import {
   setStoredToken,
   setStoredUser,
 } from "@/api/localStorage";
-import { setOnUnauthorized } from "@/api/client";
+import { ApiError, setOnUnauthorized } from "@/api/client";
 import type { User } from "@/api/schemas";
 
 function authReducer(state: AuthState, action: AuthAction) {
@@ -63,11 +63,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  function logout() {
+  const logout = useCallback(() => {
     clearStoredToken();
     clearStoredUser();
     dispatch({ type: "LOGOUT" });
-  }
+  }, []);
 
   useEffect(() => {
     setOnUnauthorized(logout);
@@ -78,25 +78,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "LOGIN_START" });
     try {
       const response = await apiLogin(email, password);
+      const user: User = {
+        id: response.id,
+        created_at: response.created_at,
+        updated_at: response.updated_at,
+        email: response.email,
+      };
+
       setStoredToken(response.token);
       dispatch({
         type: "LOGIN_SUCCESS",
         payload: {
-          user: {
-            id: response.id,
-            created_at: response.created_at,
-            updated_at: response.updated_at,
-            email: response.email,
-          },
+          user: user,
           token: response.token,
         },
       });
       setStoredUser(user as User);
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        throw new Error(error.message);
-      }
       dispatch({ type: "LOGIN_FAILURE" });
+      if (error instanceof ApiError) {
+        throw new Error(error.message, { cause: error });
+      }
     }
   }
 
