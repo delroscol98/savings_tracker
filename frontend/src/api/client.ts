@@ -1,22 +1,6 @@
 import { type ZodType } from "zod";
 import { ErrorEnvelopeSchema } from "./schemas";
-
-export function getStoredToken(): string {
-  const token = localStorage.getItem("token");
-  if (token == undefined) {
-    return "";
-  }
-
-  return token;
-}
-
-export function setStoredToken(token: string): void {
-  localStorage.setItem("token", token);
-}
-
-export function clearStoredToken(): void {
-  localStorage.removeItem("token");
-}
+import { getStoredToken } from "./localStorage";
 
 export class ApiError extends Error {
   status: number;
@@ -34,6 +18,11 @@ export class ApiError extends Error {
     this.error = error;
     this.fields = fields;
   }
+}
+
+let onUnauthorized: (() => void) | null = null;
+export function setOnUnauthorized(cb: (() => void) | null) {
+  onUnauthorized = cb;
 }
 
 export async function client<T>(
@@ -63,6 +52,10 @@ export async function client<T>(
     });
   } catch {
     throw new ApiError(0, "Network error");
+  }
+
+  if (response.status == 403) {
+    onUnauthorized?.();
   }
 
   let data: unknown;
