@@ -8,11 +8,9 @@ export const UserSchema = z.object({
 });
 export type User = z.infer<typeof UserSchema>;
 
-export const LoginResponseSchema = z
-  .object({
-    token: z.string(),
-  })
-  .extend(UserSchema);
+export const LoginResponseSchema = UserSchema.extend({
+  token: z.string(),
+});
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 
 export const MessageSchema = z.object({
