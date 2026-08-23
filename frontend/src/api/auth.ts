@@ -11,13 +11,13 @@ import { client } from "./client";
 export async function register(
   email: string,
   password: string,
-  fullName: string,
+  full_name: string,
 ): Promise<User> {
   return client<User>(
     "/api/users",
     {
       method: "POST",
-      body: { email, password, fullName },
+      body: { email, password, full_name },
     },
     UserSchema,
   );
@@ -48,12 +48,16 @@ export async function forgotPassword(email: string): Promise<Message> {
   );
 }
 
-export async function resetPassword(password: string): Promise<Message> {
+export async function resetPassword(
+  token: string,
+  password: string,
+): Promise<Message> {
   return client<Message>(
     "/api/reset-password",
     {
       method: "POST",
       body: {
+        token,
         password,
       },
     },
