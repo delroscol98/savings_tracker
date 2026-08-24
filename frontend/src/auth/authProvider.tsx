@@ -93,12 +93,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           token: response.token,
         },
       });
-      setStoredUser(user as User);
+      setStoredUser(user);
     } catch (error: unknown) {
       dispatch({ type: "LOGIN_FAILURE" });
       if (error instanceof ApiError) {
         throw new Error(error.message, { cause: error });
       }
+      throw new Error("An unexpected error occurred", { cause: error });
     }
   }
 
