@@ -4,10 +4,10 @@ export function setStoredUser(user: User): void {
   localStorage.setItem("user", JSON.stringify(user));
 }
 
-export function getStoredUser(): User {
+export function getStoredUser(): User | null {
   const user = localStorage.getItem("user");
   if (user == null) {
-    return {} as User;
+    return null;
   }
   return JSON.parse(user);
 }

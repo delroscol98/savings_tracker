@@ -4,7 +4,7 @@ import { client } from "./client";
 
 export async function listGoals(): Promise<Goal[]> {
   return client<Goal[]>(
-    "api/goals",
+    "/api/goals",
     {
       method: "GET",
     },
@@ -17,7 +17,7 @@ export async function createGoal(
   deadline: Date,
 ): Promise<Goal> {
   return client<Goal>(
-    "api/goals",
+    "/api/goals",
     {
       method: "POST",
       body: {
@@ -35,7 +35,7 @@ export async function updateGoal(
   deadline: Date,
 ): Promise<Goal> {
   return client<Goal>(
-    `api/goals/${goalId}`,
+    `/api/goals/${goalId}`,
     {
       method: "PUT",
       body: {
@@ -49,7 +49,7 @@ export async function updateGoal(
 
 export async function deleteGoal(goalId: string): Promise<Message> {
   return client<Message>(
-    `api/goals/${goalId}`,
+    `/api/goals/${goalId}`,
     {
       method: "DELETE",
     },

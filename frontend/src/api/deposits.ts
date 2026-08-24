@@ -4,7 +4,7 @@ import { client } from "./client";
 
 export async function listDeposits(goalId: string): Promise<Deposit[]> {
   return client<Deposit[]>(
-    `api/goals/${goalId}/deposits`,
+    `/api/goals/${goalId}/deposits`,
     {
       method: "GET",
     },
@@ -18,7 +18,7 @@ export async function createDeposit(
   note?: string,
 ): Promise<Deposit> {
   return client(
-    `api/goals/${goalId}/deposits`,
+    `/api/goals/${goalId}/deposits`,
     {
       method: "POST",
       body: {
