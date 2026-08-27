@@ -31,6 +31,7 @@ export async function client<T>(
   schema?: ZodType<T>,
 ): Promise<T> {
   const url = import.meta.env.VITE_API_URL + path;
+  console.log(url);
   const headers: Record<string, string> = {};
   const token = getStoredToken();
   if (token) {
@@ -47,7 +48,7 @@ export async function client<T>(
   try {
     response = await fetch(url, {
       ...rest,
-      body: typeof body === "string" ? body : undefined,
+      body: typeof options.body === "string" ? options.body : undefined,
       headers: { ...rest.headers, ...headers },
     });
   } catch {
