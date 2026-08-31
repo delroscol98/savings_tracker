@@ -64,6 +64,7 @@
   font-weight: 600;
   font-size: 64px;
   letter-spacing: -2px;
+  line-height: 1;
 }
 
 @utility text-1-mobile {
