@@ -4,6 +4,7 @@ import { z } from "zod";
 import { Link, useNavigate } from "react-router";
 import { register as apiRegister } from "@/api/auth";
 import { handleApiError } from "@/lib/errors";
+import { AuthLayout } from "@/components/AuthLayout";
 
 const registerSchema = z.object({
   full_name: z.string().min(1, "Name is required"),
@@ -37,76 +38,84 @@ export function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-900 flex items-center justify-center px-spacing-7">
-      <div className="bg-neutral-800 rounded-radius-2xl p-spacing-12 w-full max-w-[400px]">
-        <h1 className="text-3 text-neutral-0 mb-spacing-10">Sign up</h1>
+    <AuthLayout>
+      <div className="pb-10 mt-11">
+        <div className="text-neutral-0 grid gap-4">
+          <h1 className="text-2">Create your account</h1>
+          <p className="text-5 text-neutral-300">
+            Start tracking your savings goals
+          </p>
+        </div>
+      </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-spacing-7">
-          {errors.root && (
-            <p className="text-red-500 text-6">{errors.root.message}</p>
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8">
+        {errors.root && (
+          <p className="text-red-500 text-6">{errors.root.message}</p>
+        )}
+
+        <div className="flex flex-col gap-5">
+          <label htmlFor="full_name" className="text-5 text-neutral-0">
+            Full name
+          </label>
+          <input
+            id="full_name"
+            type="text"
+            {...register("full_name")}
+            className="bg-neutral-700 text-neutral-0 rounded-md px-7 py-5 text-5 outline outline-solid outline-neutral-500 focus:ring-2 focus:ring-orange-500"
+          />
+          {errors.full_name && (
+            <p className="text-red-500 text-7">{errors.full_name.message}</p>
           )}
+        </div>
 
-          <div className="flex flex-col gap-spacing-3">
-            <label htmlFor="full_name" className="text-6 text-neutral-300">
-              Full name
-            </label>
-            <input
-              id="full_name"
-              type="text"
-              {...register("full_name")}
-              className="bg-neutral-700 text-neutral-0 rounded-radius-md px-spacing-7 py-spacing-5 text-5 outline-none focus:ring-2 focus:ring-orange-500"
-            />
-            {errors.full_name && (
-              <p className="text-red-500 text-7">{errors.full_name.message}</p>
-            )}
-          </div>
+        <div className="flex flex-col gap-5">
+          <label htmlFor="email" className="text-5 text-neutral-0">
+            Email address
+          </label>
+          <input
+            id="email"
+            type="email"
+            {...register("email")}
+            className="bg-neutral-700 text-neutral-0 rounded-md px-7 py-5 text-5 outline outline-solid outline-neutral-500 focus:ring-2 focus:ring-orange-500"
+          />
+          {errors.email && (
+            <p className="text-red-500 text-7">{errors.email.message}</p>
+          )}
+        </div>
 
-          <div className="flex flex-col gap-spacing-3">
-            <label htmlFor="email" className="text-6 text-neutral-300">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              {...register("email")}
-              className="bg-neutral-700 text-neutral-0 rounded-radius-md px-spacing-7 py-spacing-5 text-5 outline-none focus:ring-2 focus:ring-orange-500"
-            />
-            {errors.email && (
-              <p className="text-red-500 text-7">{errors.email.message}</p>
-            )}
-          </div>
+        <div className="flex flex-col gap-5">
+          <label htmlFor="email" className="text-5 text-neutral-0">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            {...register("password")}
+            className="bg-neutral-700 text-neutral-0 rounded-md px-7 py-5 text-5 outline outline-solid outline-neutral-500 focus:ring-2 focus:ring-orange-500"
+          />
+          {errors.password && (
+            <p className="text-red-500 text-7">{errors.password.message}</p>
+          )}
+        </div>
 
-          <div className="flex flex-col gap-spacing-3">
-            <label htmlFor="password" className="text-6 text-neutral-300">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              {...register("password")}
-              className="bg-neutral-700 text-neutral-0 rounded-radius-md px-spacing-7 py-spacing-5 text-5 outline-none focus:ring-2 focus:ring-orange-500"
-            />
-            {errors.password && (
-              <p className="text-red-500 text-7">{errors.password.message}</p>
-            )}
-          </div>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-orange-500 hover:bg-orange-400 text-neutral-0 rounded-full text-5 py-5 mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? "Creating account..." : "Create account"}
+        </button>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-orange-500 hover:bg-orange-400 text-neutral-0 rounded-radius-md text-5-semibold py-spacing-5 mt-spacing-3 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? "Creating account..." : "Create account"}
-          </button>
-        </form>
-
-        <p className="mt-spacing-9 text-6 text-neutral-400 text-center">
+        <p className="text-5 text-neutral-400 text-center">
           Already have an account?{" "}
-          <Link to="/login" className="text-orange-500 hover:text-orange-400">
+          <Link
+            to="/login"
+            className="text-neutral-0 hover:text-orange-400 border-b border-neutral-0 hover:border-orange-400"
+          >
             Log in
           </Link>
         </p>
-      </div>
-    </div>
+      </form>
+    </AuthLayout>
   );
 }
