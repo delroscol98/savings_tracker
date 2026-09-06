@@ -37,7 +37,7 @@ export function LoginPage() {
   return (
     <AuthLayout>
       <div className="pb-10 mt-11 border-b border-neutral-700">
-        <div className="text-neutral-0 grid gap-4">
+        <div className="text-neutral-0 grid gap-7">
           <h1 className="text-2">Welcome back</h1>
           <p className="text-5 text-neutral-300">Sign into your account</p>
         </div>

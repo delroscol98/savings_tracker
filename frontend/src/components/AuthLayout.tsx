@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import logo from "../assets/logo-large.svg";
 import star from "../assets/pattern-star.svg";
 import { useLocation } from "react-router";
+import { Link } from "react-router";
 
 export function AuthLayout({ children }: { children: ReactNode }) {
   function quoteSetter() {
@@ -29,6 +30,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
           </>
         );
       case "/forgot-password":
+      case "/reset-password":
         return (
           <>
             <span className="text-1 text-neutral-0 self-center">
@@ -41,7 +43,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
     }
   }
   return (
-    <div className="min-h-screen bg-neutral-900 px-7 md:p-13 lg:px-14 lg:py-11 grid lg:grid-cols-2 items-center content-center">
+    <div className="min-h-screen bg-neutral-900 px-7 md:p-13 lg:px-14 lg:py-11 grid lg:grid-cols-2 items-center">
       <div
         className={`max-lg:hidden lg:min-h-full lg:grid lg:grid-rows-[1fr_min-content] lg:mr-14 lg:px-11 lg:py-8 lg:rounded-2xl lg:bg-linear-to-br lg:from-orange-700 lg:to-orange-400 lg:relative lg:overflow-hidden`}
       >
@@ -53,7 +55,9 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         {quoteSetter()}
       </div>
       <div>
-        <img src={logo} alt="logo" />
+        <Link to="/login">
+          <img src={logo} alt="logo" />
+        </Link>
 
         {children}
       </div>
