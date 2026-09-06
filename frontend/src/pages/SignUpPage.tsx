@@ -40,7 +40,7 @@ export function SignUpPage() {
   return (
     <AuthLayout>
       <div className="pb-10 mt-11">
-        <div className="text-neutral-0 grid gap-4">
+        <div className="text-neutral-0 grid gap-7">
           <h1 className="text-2">Create your account</h1>
           <p className="text-5 text-neutral-300">
             Start tracking your savings goals

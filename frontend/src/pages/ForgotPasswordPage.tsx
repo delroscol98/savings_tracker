@@ -5,15 +5,18 @@ import { z } from "zod";
 import { Link } from "react-router";
 import { forgotPassword } from "@/api/auth";
 import { handleApiError } from "@/lib/errors";
+import { AuthLayout } from "@/components/AuthLayout";
+import chevron from "../assets/icon-chevron-left.svg";
 
 const forgotPasswordSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
+  email: z.email("Please enter a valid email"),
 });
 
 type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
 
 export function ForgotPasswordPage() {
   const [sent, setSent] = useState(false);
+  const [email, setEmail] = useState("");
   const {
     register,
     handleSubmit,
@@ -34,64 +37,85 @@ export function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="min-h-screen bg-neutral-900 flex items-center justify-center px-spacing-7">
-        <div className="bg-neutral-800 rounded-radius-2xl p-spacing-12 w-full max-w-[400px]">
-          <h1 className="text-3 text-neutral-0 mb-spacing-7">Check your email</h1>
-          <p className="text-5 text-neutral-300 mb-spacing-9">
-            If an account exists with that email, we&apos;ve sent a password reset
-            link.
+      <AuthLayout>
+        <div className="grid gap-10 mt-11">
+          <div className="grid gap-4">
+            <h1 className="text-2 text-neutral-0">Check your inbox</h1>
+            <p className="text-5 text-neutral-300">
+              We've sent a reset link to{" "}
+              <span className="text-neutral-0">{email}</span>
+            </p>
+          </div>
+          <p className="text-5 text-neutral-0">
+            This link expires in 30 minutes
           </p>
-          <Link
-            to="/login"
-            className="block text-center text-6 text-orange-500 hover:text-orange-400"
-          >
-            Back to log in
-          </Link>
+          <div className="grid gap-7">
+            <p className="text-5 text-neutral-300">
+              Didn't receive it?{" "}
+              <span className="text-neutral-0 hover:text-orange-400 border-b border-neutral-0 hover:border-orange-400 cursor-pointer" onClick={handleSubmit(onSubmit)}>
+                Resend email
+              </span>
+            </p>
+            <Link to="/login" className="text-5 text-neutral-300 flex gap-3">
+              <img src={chevron} alt="" />
+              Back to sign in
+            </Link>
+          </div>
         </div>
-      </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-900 flex items-center justify-center px-spacing-7">
-      <div className="bg-neutral-800 rounded-radius-2xl p-spacing-12 w-full max-w-[400px]">
-        <h1 className="text-3 text-neutral-0 mb-spacing-10">Forgot password</h1>
+    <AuthLayout>
+      <div className="pb-10 mt-11">
+        <div className="text-neutral-0 grid gap-7">
+          <h1 className="text-2">Forgot your password</h1>
+          <p className="text-5 text-neutral-300">
+            Enter your email address and we'll send you a link to reset it
+          </p>
+        </div>
+      </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-spacing-7">
-          {errors.root && (
-            <p className="text-red-500 text-6">{errors.root.message}</p>
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8">
+        {errors.root && (
+          <p className="text-red-500 text-6">{errors.root.message}</p>
+        )}
+
+        <div className="flex flex-col gap-5">
+          <label htmlFor="email" className="text-5 text-neutral-0">
+            Email address
+          </label>
+          <input
+            id="email"
+            type="email"
+            {...register("email")}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="bg-neutral-700 text-neutral-0 rounded-md px-7 py-5 text-5 outline outline-solid outline-neutral-500 focus:ring-2 focus:ring-orange-500"
+          />
+          {errors.email && (
+            <p className="text-red-500 text-7">{errors.email.message}</p>
           )}
+        </div>
 
-          <div className="flex flex-col gap-spacing-3">
-            <label htmlFor="email" className="text-6 text-neutral-300">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              {...register("email")}
-              className="bg-neutral-700 text-neutral-0 rounded-radius-md px-spacing-7 py-spacing-5 text-5 outline-none focus:ring-2 focus:ring-orange-500"
-            />
-            {errors.email && (
-              <p className="text-red-500 text-7">{errors.email.message}</p>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-orange-500 hover:bg-orange-400 text-neutral-0 rounded-radius-md text-5-semibold py-spacing-5 mt-spacing-3 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? "Sending..." : "Send reset link"}
-          </button>
-        </form>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-orange-500 hover:bg-orange-400 text-neutral-0 rounded-full text-5 py-5 mt-3 disabled:opacity-50 cursor-pointer"
+        >
+          {isSubmitting ? "Sending..." : "Send reset link"}
+        </button>
 
         <p className="mt-spacing-9 text-6 text-neutral-400 text-center">
-          <Link to="/login" className="text-orange-500 hover:text-orange-400">
-            Back to log in
+          <Link
+            to="/login"
+            className="text-neutral-0 hover:text-orange-400 border-b border-neutral-0 hover:border-orange-400"
+          >
+            Back to sign in
           </Link>
         </p>
-      </div>
-    </div>
+      </form>
+    </AuthLayout>
   );
 }
