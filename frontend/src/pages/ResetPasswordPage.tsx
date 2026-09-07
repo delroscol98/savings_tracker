@@ -44,21 +44,20 @@ export function ResetPasswordPage() {
           </div>
         </div>
 
-
-          <Link
-            to="/forgot-password"
-            className="inline text-6 text-neutral-0 hover:text-orange-400 border-b border-neutral-0 hover:border-orange-400"
-          >
-            Request a new reset link
-          </Link>
+        <Link
+          to="/forgot-password"
+          className="inline text-6 text-neutral-0 hover:text-orange-400 border-b border-neutral-0 hover:border-orange-400"
+        >
+          Request a new reset link
+        </Link>
       </AuthLayout>
     );
   }
 
   async function onSubmit(data: ResetPasswordForm) {
     if (newPassword != confirmNewPassword) {
-      setClientError("Passwords do not match")
-      return
+      setClientError("Passwords do not match");
+      return;
     }
 
     try {
@@ -118,22 +117,20 @@ export function ResetPasswordPage() {
             }}
             onBlur={() => {
               if (newPassword != confirmNewPassword) {
-                setClientError("Passwords do not match")
+                setClientError("Passwords do not match");
               } else {
-                setClientError("")
+                setClientError("");
               }
             }}
             className="bg-neutral-700 text-neutral-0 rounded-md px-7 py-5 text-5 outline outline-solid outline-neutral-500 focus:ring-2 focus:ring-orange-500"
           />
-          {clientError && (
-            <p className="text-red-500 text-7">{clientError}</p>
-          )}
+          {clientError && <p className="text-red-500 text-7">{clientError}</p>}
         </div>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-orange-500 hover:bg-orange-400 text-neutral-0 rounded-full text-5 py-5 mt-3 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-orange-500 hover:bg-orange-400 text-neutral-900 rounded-full text-5 py-5 mt-3 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "Resetting..." : "Reset password"}
         </button>

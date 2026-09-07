@@ -8,7 +8,7 @@ import { AuthLayout } from "@/components/AuthLayout";
 
 const registerSchema = z.object({
   full_name: z.string().min(1, "Name is required"),
-  email: z.string().email("Please enter a valid email"),
+  email: z.email("Please enter a valid email"),
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
@@ -49,10 +49,6 @@ export function SignUpPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8">
-        {errors.root && (
-          <p className="text-red-500 text-6">{errors.root.message}</p>
-        )}
-
         <div className="flex flex-col gap-5">
           <label htmlFor="full_name" className="text-5 text-neutral-0">
             Full name
@@ -101,7 +97,7 @@ export function SignUpPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-orange-500 hover:bg-orange-400 text-neutral-0 rounded-full text-5 py-5 mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-orange-500 hover:bg-orange-400 text-neutral-900 rounded-full text-5 py-5 mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "Creating account..." : "Create account"}
         </button>
