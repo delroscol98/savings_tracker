@@ -6,9 +6,8 @@ import { useLocation } from "react-router";
 import { Link } from "react-router";
 
 export function AuthLayout({ children }: { children: ReactNode }) {
+  const location = useLocation();
   function quoteSetter() {
-    const location = useLocation();
-
     switch (location.pathname) {
       case "/login":
         return (
