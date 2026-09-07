@@ -1,7 +1,12 @@
 import { ApiError } from "@/api/client";
+import { toast } from "sonner";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function handleApiError(error: unknown, setError: any) {
+export function handleApiError(
+  error: unknown,
+  setError: any,
+  toastId?: string | number,
+) {
   const apiError =
     error instanceof Error && error.cause instanceof ApiError
       ? error.cause
@@ -14,11 +19,11 @@ export function handleApiError(error: unknown, setError: any) {
     return;
   }
 
+  setError("root", { message: apiError.error });
+  toast.error(apiError.error, { id: toastId });
   if (apiError.fields) {
     for (const [field, messages] of Object.entries(apiError.fields)) {
       setError(field, { message: messages[0] });
     }
-  } else {
-    setError("root", { message: apiError.error });
   }
 }

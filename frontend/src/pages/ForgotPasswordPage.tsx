@@ -7,6 +7,7 @@ import { forgotPassword } from "@/api/auth";
 import { handleApiError } from "@/lib/errors";
 import { AuthLayout } from "@/components/AuthLayout";
 import chevron from "../assets/icon-chevron-left.svg";
+import { toast } from "sonner";
 
 const forgotPasswordSchema = z.object({
   email: z.email("Please enter a valid email"),
@@ -27,11 +28,13 @@ export function ForgotPasswordPage() {
   });
 
   async function onSubmit(data: ForgotPasswordForm) {
+    const toastId = toast.loading("Sending...");
     try {
       await forgotPassword(data.email);
+      toast.success("Email sent!", { id: toastId });
       setSent(true);
     } catch (error: unknown) {
-      handleApiError(error, setError);
+      handleApiError(error, setError, toastId);
     }
   }
 
@@ -52,7 +55,10 @@ export function ForgotPasswordPage() {
           <div className="grid gap-7">
             <p className="text-5 text-neutral-300">
               Didn't receive it?{" "}
-              <span className="text-neutral-0 hover:text-orange-400 border-b border-neutral-0 hover:border-orange-400 cursor-pointer" onClick={handleSubmit(onSubmit)}>
+              <span
+                className="text-neutral-0 hover:text-orange-400 border-b border-neutral-0 hover:border-orange-400 cursor-pointer"
+                onClick={handleSubmit(onSubmit)}
+              >
                 Resend email
               </span>
             </p>
@@ -102,7 +108,7 @@ export function ForgotPasswordPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-orange-500 hover:bg-orange-400 text-neutral-0 rounded-full text-5 py-5 mt-3 disabled:opacity-50 cursor-pointer"
+          className="bg-orange-500 hover:bg-orange-400 text-neutral-900 rounded-full text-5 py-5 mt-3 disabled:opacity-50 cursor-pointer"
         >
           {isSubmitting ? "Sending..." : "Send reset link"}
         </button>

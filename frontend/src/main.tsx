@@ -12,6 +12,7 @@ import "./index.css";
 import App from "./App.tsx";
 import { AuthProvider } from "./auth/authProvider.tsx";
 import { BrowserRouter } from "react-router";
+import { Toaster } from "sonner";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,14 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
+          <Toaster
+            toastOptions={{
+              style: {
+                background: "var(--color-orange-400)",
+                border: "none",
+              },
+            }}
+          />
           <App />
         </BrowserRouter>
       </AuthProvider>
