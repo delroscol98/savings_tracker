@@ -1,9 +1,9 @@
 import { ApiError } from "@/api/client";
 import { toast } from "sonner";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function handleApiError(
   error: unknown,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setError: any,
   toastId?: string | number,
 ) {
